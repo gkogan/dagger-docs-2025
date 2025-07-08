@@ -1,32 +1,73 @@
-# Mintlify Starter Kit
+# This is the new structure for the documentation.
 
-Click on `Use this template` to copy the Mintlify starter kit. The starter kit contains examples including
+### 🚀 Getting Started
+- **What is Dagger?** (in new_docs/index.mdx)
+  - [Intro](https://docs.dagger.io/)
+  - [Features](https://docs.dagger.io/features)
+- **Installation** (in new_docs/installation.mdx)
+  - [Install Docs](https://docs.dagger.io/install)
+- **Quickstart** (in new_docs/quickstart/index.mdx)
+  - [CI Quickstart (with LLM)](https://docs.dagger.io/quickstart/ci)
+- **Core Concepts** (in new_docs/quickstart/index.mdx)
+  - [Core Concepts Overview](https://docs.dagger.io/quickstart)
+- **IDE Setup** (in new_docs/ide-setup.mdx)
+  - [IDE Integration](https://docs.dagger.io/api/ide-integration)
 
-- Guide pages
-- Navigation
-- Customizations
-- API Reference pages
-- Use of popular components
+### 🎯 Use Cases
+- **Modern CI** (in new_docs/use-cases.mdx)
+  - [Using Modules](https://docs.dagger.io/features/modules)
+- **Agentic CI** (in new_docs/use-cases.mdx)
+  - [LLM Integration](https://docs.dagger.io/features/llm)
 
-### Development
+### 💡 Examples (in new_docs/example.mdx)
+- [Example Workflows](https://docs.dagger.io/examples)
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview the documentation changes locally. To install, use the following command
+### 🧩 Workflow Components (in new_docs/components/)
+- **Overview**
+- **Functions**
+- **Objects** ([API Reference](https://docs.dagger.io/api/types))
+  - Container
+  - Directory
+  - File
+  - **LLM**
+    - [LLM API](https://docs.dagger.io/api/llm)
+  - **Secret**
+    - [Secrets API](https://docs.dagger.io/api/secrets)
+  - **Service**
+    - [Services Feature](https://docs.dagger.io/features/services)
+  - Environment
+  - Create your own
+- **Modules**
+  - [Custom Functions](https://docs.dagger.io/api/custom-functions)
 
-```
-npm i -g mint
-```
+### ⚙️ Engine & Runtime (in new_docs/engine/)
+- Overview
+- Local Development
+- CI Integration
+  - GitHub Actions
+  - GitLab CI
+  - Jenkins
+  - Other Platforms
+- Configuration
+- Performance & Caching
+- Troubleshooting
 
-Run the following command at the root of your documentation (where docs.json is)
+### ☁️ Dagger Cloud (in new_docs/cloud/)
+- Overview
+- Organization & Auth
+- Observability
+- Module Catalog & Insights
 
-```
-mint dev
-```
-
-### Publishing Changes
-
-Install our Github App to auto propagate changes from your repo to your deployment. Changes will be deployed to production automatically after pushing to the default branch. Find the link to install on your dashboard. 
-
-#### Troubleshooting
-
-- If the dev environment isn't running - Run `mint update` to ensure you have the most recent version of the CLI.
-- Page loads as a 404 - Make sure you are running in a folder with `docs.json`
+### 📚 Reference (in new_docs/reference)
+- **CLI Reference** (in new_docs/reference/cli/index.mdx)
+- **API Documentation** (in new_docs/reference/api/index.mdx)
+  - GraphQL API
+  - Core Types
+  - Function Registry
+- **SDKs**
+  - Go SDK
+  - Python SDK
+  - TypeScript SDK
+  - PHP SDK
+  - Java SDK
+  - Rust SDK
