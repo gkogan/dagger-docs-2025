@@ -73,24 +73,6 @@
         ]
       },
       {
-        "tab": "Extending Dagger",
-        "groups": [
-          {
-            "group": "Extending Dagger",
-            "icon": "plug",
-            "pages": [
-              "extending/overview",
-              "extending/arguments",
-              "extending/default-paths",
-              "extending/return-values",
-              "extending/inline-documentation",
-              "extending/services",
-              "extending/module-dependencies"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "Reference",
         "icon": "code",
         "groups": [
