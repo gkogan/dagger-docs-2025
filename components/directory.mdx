@@ -2,18 +2,18 @@
 title: "Directory"
 ---
 
-The `Directory` type represents the state of a directory. This could be either a local directory path or a remote Git reference. 
+The `Directory` type represents the state of a directory. This could be either a local directory path or a remote Git reference.
 
 ## Types
 
 Some of its important fields are:
 
-| Field | Description |
-|-------|-------------|
-| `dockerBuild` | Builds a new Docker container from the directory |
-| `entries` | Returns a list of files and directories in the directory |
-| `export` | Writes the contents of the directory to a path on the host |
-| `file` | Returns a file at the given path as a `File`  |
+| Field                    | Description                                                     |
+| ------------------------ | --------------------------------------------------------------- |
+| `dockerBuild`            | Builds a new Docker container from the directory                |
+| `entries`                | Returns a list of files and directories in the directory        |
+| `export`                 | Writes the contents of the directory to a path on the host      |
+| `file`                   | Returns a file at the given path as a `File`                    |
 | `withFile` / `withFiles` | Returns the directory plus the file(s) copied to the given path |
 
 ## Default paths
@@ -21,7 +21,10 @@ Some of its important fields are:
 It is possible to assign a default path for a `Directory` or `File` argument in a Dagger Function. Dagger will automatically use this default path when no value is specified for the argument. The `Directory` or `File` loaded in this manner is not merely a string, but the actual filesystem state of the directory or file.
 
 <Important>
-Default paths are only available for `Directory` and `File` arguments. They are commonly used to load constant filesystem locations, such as an application's source code directory. Additionally, when a value is explicitly passed for the argument, it always overrides the default path.
+  Default paths are only available for `Directory` and `File` arguments. They
+  are commonly used to load constant filesystem locations, such as an
+  application's source code directory. Additionally, when a value is explicitly
+  passed for the argument, it always overrides the default path.
 </Important>
 
 Here's an example:
@@ -32,28 +35,36 @@ Here's an example:
 The default path is set by adding a `defaultPath` pragma on the corresponding Dagger Function `source` argument.
 
 ```go file=./snippets/default-paths/go/main.go
+
 ```
+
 </Tab>
 <Tab value="python" title="Python">
 
 The default path is set by adding a `DefaultPath` annotation on the corresponding Dagger Function `source` argument.
 
 ```python file=./snippets/default-paths/python/main.py
+
 ```
+
 </Tab>
 <Tab value="typescript" title="TypeScript">
 
 The default path is set by adding an `@argument` decorator with a `defaultPath` parameter on the corresponding Dagger Function `source` argument.
 
 ```typescript file=./snippets/default-paths/typescript/index.ts
+
 ```
+
 </Tab>
 <Tab value="php" title="PHP">
 
 The default path is set by adding a `#[DefaultPath]` Attribute on the corresponding Dagger Function `source` argument.
 
 ```php file=./snippets/default-paths/php/src/MyModule.php
+
 ```
+
 </Tab>
 </Tabs>
 
@@ -71,19 +82,20 @@ flowchart TD
 ```
 
 <Important>
-For security reasons, it is not possible to retrieve files or directories outside the context directory.
+  For security reasons, it is not possible to retrieve files or directories
+  outside the context directory.
 </Important>
 
 The following sections contain examples of how a `Directory` argument is resolved for different default path values. The same rules are followed for `File` arguments.
 
 ### For Git repositories
 
-| Default path | Context directory | Resolved path |
-| --- | --- | --- |
-| `/` | Repository root (`/`) | `/` |
-| `/src` | Repository root (`/`) | `/src` |
-| `.` | Directory with `dagger.json` (`/my-module`) | `/my-module` |
-| `..` | Directory with `dagger.json` (`/my-module`) | `/` |
+| Default path | Context directory                           | Resolved path |
+| ------------ | ------------------------------------------- | ------------- |
+| `/`          | Repository root (`/`)                       | `/`           |
+| `/src`       | Repository root (`/`)                       | `/src`        |
+| `.`          | Directory with `dagger.json` (`/my-module`) | `/my-module`  |
+| `..`         | Directory with `dagger.json` (`/my-module`) | `/`           |
 
 - If the default path is an absolute path `/` (or `/src`), the context directory is the repository root (`/`). The resolved path will then be `/` (or `/src`).
 - If the default path is the relative path `.`, the context directory is the directory containing `dagger.json` (say, `/my-module`). The resolved path will then be `/my-module`.
@@ -91,19 +103,21 @@ The following sections contain examples of how a `Directory` argument is resolve
 
 ### For all other cases
 
-| Default path | Context directory | Resolved path |
-| --- | --- | --- |
-| `/` | Directory with `dagger.json` (`/my-module`) | `/my-module` |
-| `/src` | Directory with `dagger.json` (`/my-module`) | `/my-module/src` |
-| `.` | Directory with `dagger.json` (`/my-module`) | `/my-module` |
-| `..` | Directory with `dagger.json` (`/my-module`) | Outside context directory; error |
+| Default path | Context directory                           | Resolved path                    |
+| ------------ | ------------------------------------------- | -------------------------------- |
+| `/`          | Directory with `dagger.json` (`/my-module`) | `/my-module`                     |
+| `/src`       | Directory with `dagger.json` (`/my-module`) | `/my-module/src`                 |
+| `.`          | Directory with `dagger.json` (`/my-module`) | `/my-module`                     |
+| `..`         | Directory with `dagger.json` (`/my-module`) | Outside context directory; error |
 
-- If the default path is an absolute path `/` (or `/src`),  the context directory is the directory containing `dagger.json` (say, `/my-module`). The resolved path will then be `/my-module` (or `/my-module/src`).
+- If the default path is an absolute path `/` (or `/src`), the context directory is the directory containing `dagger.json` (say, `/my-module`). The resolved path will then be `/my-module` (or `/my-module/src`).
 - If the default path is the relative path `.`, the context directory is still the directory containing `dagger.json`. The resolved path will then be `/my-module`.
 - If the default path is the relative path `..`, the context directory is still the directory containing `dagger.json`. The resolved path will then be the parent of the context directory. This will trigger an error, since Dagger does not permit access to paths outside the context directory.
 
 <Tip>
-It's also possible to provide an `ignore` parameter to a contextual argument of type `Directory` to [automatically ignore or include files in the directory](./fs-filters.mdx).
+  It's also possible to provide an `ignore` parameter to a contextual argument
+  of type `Directory` to [automatically ignore or include files in the
+  directory](./filters.mdx).
 </Tip>
 
 ## Filters
@@ -148,15 +162,23 @@ Pre-call filtering means that a directory is filtered before it's uploaded to th
 
 - Large files, such as audio/video files and other binary content. These files take time to upload. If they're not directly relevant, you'll usually want your Dagger Function to ignore them.
 
-  <Tip>
-  The `.git` directory is a good example of both these cases. It contains a lot of data, including large binary objects, and for projects with a long version history, it can sometimes be larger than your actual source code.
-  </Tip>
+<Tip>
+  The `.git` directory is a good example of both these cases. It contains a lot
+  of data, including large binary objects, and for projects with a long version
+  history, it can sometimes be larger than your actual source code.
+</Tip>
 
 - Dependencies. If you're developing locally, you'll typically have your project dependencies installed locally: `node_modules` (Node.js), `.venv` (Python), `vendor` (PHP) and so on. When you call your Dagger Function locally, Dagger will upload all these installed dependencies as well. This is both bad practice and inefficient. Typically, you'll want your Dagger Function to ignore locally-installed dependencies and only operate on the project source code.
 
 <Note>
-  Dagger Functions are not aware of the host filesystem, so they cannot automatically read exclusion patterns from existing `.dockerignore` or `.gitignore` files. You need to manually implement the same patterns in your Dagger Function.
-At the time of writing, Dagger [does not read exclusion patterns from existing `.dockerignore`/`.gitignore` files](https://github.com/dagger/dagger/issues/6627). If you already use these files, you'll need to manually implement the same patterns in your Dagger Function.
+  Dagger Functions are not aware of the host filesystem, so they cannot
+  automatically read exclusion patterns from existing `.dockerignore` or
+  `.gitignore` files. You need to manually implement the same patterns in your
+  Dagger Function. At the time of writing, Dagger [does not read exclusion
+  patterns from existing `.dockerignore`/`.gitignore`
+  files](https://github.com/dagger/dagger/issues/6627). If you already use these
+  files, you'll need to manually implement the same patterns in your Dagger
+  Function.
 </Note>
 
 To implement a pre-call filter in your Dagger Function, add an `ignore` parameter to your `Directory` argument. The `ignore` parameter follows the [`.gitignore` syntax](https://git-scm.com/docs/gitignore). Some important points to keep in mind are:
@@ -170,6 +192,7 @@ To implement a pre-call filter in your Dagger Function, add an `ignore` paramete
 Here's an example of a Dagger Function that excludes everything in a given directory except Go source code files:
 
 ```go file=./snippets/fs-filters/pre-call/go/main.go
+
 ```
 
 </Tab>
@@ -178,6 +201,7 @@ Here's an example of a Dagger Function that excludes everything in a given direc
 Here's an example of a Dagger Function that excludes everything in a given directory except Python source code files:
 
 ```python file=./snippets/fs-filters/pre-call/python/main.py
+
 ```
 
 </Tab>
@@ -186,6 +210,7 @@ Here's an example of a Dagger Function that excludes everything in a given direc
 Here's an example of a Dagger Function that excludes everything in a given directory except TypeScript source code files:
 
 ```typescript file=./snippets/fs-filters/pre-call/typescript/index.ts
+
 ```
 
 </Tab>
@@ -194,6 +219,7 @@ Here's an example of a Dagger Function that excludes everything in a given direc
 Here's an example of a Dagger Function that excludes everything in a given directory except PHP source code files:
 
 ```php file=./snippets/fs-filters/pre-call/php/src/MyModule.php
+
 ```
 
 </Tab>
@@ -202,6 +228,7 @@ Here's an example of a Dagger Function that excludes everything in a given direc
 Here's an example of a Dagger Function that excludes everything in a given directory except Java source code files:
 
 ```java file=./snippets/fs-filters/pre-call/java/MyModule.java
+
 ```
 
 </Tab>
@@ -226,7 +253,8 @@ Here are a few examples of useful patterns:
 
 // exclude Git metadata
 // +ignore=[".git", "**/.gitignore"]
-```
+
+````
 
 You can also split them into multiple lines:
 
@@ -235,25 +263,26 @@ You can also split them into multiple lines:
 //   "**_test.go",
 //   "**/testdata/**"
 // ]
-```
+````
+
 </Tab>
 <Tab value="python" title="Python">
 ```python
 # exclude Pytest tests and test data
 Ignore(["tests/", ".pytest_cache"])
-
 # exclude binaries
 Ignore(["bin"])
-
 # exclude Python dependencies
 Ignore(["**/.venv", "**/__pycache__"])
-
 # exclude Node.js dependencies
+
 Ignore(["**/node_modules"])
 
 # exclude Git metadata
+
 Ignore([".git", "**/.gitignore"])
-```
+
+````
 </Tab>
 <Tab value="typescript" title="TypeScript">
 ```typescript
@@ -271,25 +300,23 @@ Ignore([".git", "**/.gitignore"])
 
 // exclude Git metadata
 @argument({ ignore: [".git", "**/.gitignore"] })
-```
+````
+
 </Tab>
 <Tab value="php" title="PHP">
 ```php
 // exclude PHPUnit tests and test data
 #[Ignore('tests/', '.phpunit.cache', '.phpunit.result.cache')]
 
-// exclude binaries
-#[Ignore('bin')]
+// exclude binaries #[Ignore('bin')]
 
-// exclude Composer dependencies
-#[Ignore('vendor/')]
+// exclude Composer dependencies #[Ignore('vendor/')]
 
-// exclude Node.js dependencies
-#[Ignore('**/node_modules')]
+// exclude Node.js dependencies #[Ignore('**/node_modules')]
 
-// exclude Git metadata
-#[Ignore('.git/', '**/.gitignore')]
-```
+// exclude Git metadata #[Ignore('.git/', '**/.gitignore')]
+
+````
 </Tab>
 <Tab value="java" title="Java">
 ```java
@@ -307,7 +334,8 @@ Ignore([".git", "**/.gitignore"])
 
 // exclude Git metadata
 @Ignore({".git", "**/.gitignore"})
-```
+````
+
 </Tab>
 </Tabs>
 
@@ -325,6 +353,7 @@ A good example of this is a multi-stage build. Imagine a Dagger Function that re
 To implement a post-call filter in your Dagger Function, use the `DirectoryWithDirectoryOpts` or `ContainerWithDirectoryOpts` structs, which support `Include` and `Exclude` patterns for `Directory` objects. Here's an example:
 
 ```go file=./snippets/fs-filters/post-call/go/main.go
+
 ```
 
 </Tab>
@@ -333,6 +362,7 @@ To implement a post-call filter in your Dagger Function, use the `DirectoryWithD
 To implement a post-call filter in your Dagger Function, use the `include` and `exclude` parameters when working with `Directory` objects. Here's an example:
 
 ```python file=./snippets/fs-filters/post-call/python/main.py
+
 ```
 
 </Tab>
@@ -341,6 +371,7 @@ To implement a post-call filter in your Dagger Function, use the `include` and `
 To implement a post-call filter in your Dagger Function, use the `include` and `exclude` parameters when working with `Directory` objects. Here's an example:
 
 ```typescript file=./snippets/fs-filters/post-call/typescript/index.ts
+
 ```
 
 </Tab>
@@ -349,6 +380,7 @@ To implement a post-call filter in your Dagger Function, use the `include` and `
 To implement a post-call filter in your Dagger Function, use the `include` and `exclude` parameters when working with `Directory` objects. Here's an example:
 
 ```php file=./snippets/fs-filters/post-call/php/src/MyModule.php
+
 ```
 
 </Tab>
@@ -357,6 +389,7 @@ To implement a post-call filter in your Dagger Function, use the `include` and `
 To implement a post-call filter in your Dagger Function, use the `Container.WithDirectoryArguments` class which support `withInclude` and `withExclude` functions when working with `Directory` objects. Here's an example:
 
 ```java file=./snippets/fs-filters/post-call/java/MyModule.java
+
 ```
 
 </Tab>
@@ -374,83 +407,84 @@ dirOpts := dagger.ContainerWithDirectoryOpts{
 
 // include only the build output directory
 dirOpts := dagger.ContainerWithDirectoryOpts{
-  Include: "build",
+Include: "build",
 }
 
 // include only ZIP files
 dirOpts := dagger.DirectoryWithDirectoryOpts{
-  Include: "*.zip",
+Include: "\*.zip",
 }
 
 // exclude Git metadata
 dirOpts := dagger.DirectoryWithDirectoryOpts{
-  Exclude: "*.git",
+Exclude: "\*.git",
 }
-```
+
+````
 </Tab>
 <Tab value="python" title="Python">
-```python
-# exclude all Markdown files
-dir_opts = {"exclude": ["*.md*"]}
+    ```python
+    # exclude all Markdown files
+    dir_opts = {"exclude": ["*.md*"]}
 
-# include only the build output directory
-dir_opts = {"include": ["build"]}
+    # include only the build output directory
+    dir_opts = {"include": ["build"]}
 
-# include only ZIP files
-dir_opts = {"include": ["*.zip"]}
+    # include only ZIP files
+    dir_opts = {"include": ["*.zip"]}
 
-# exclude Git metadata
-dir_opts = {"exclude": ["*.git"]}
-```
+    # exclude Git metadata
+    dir_opts = {"exclude": ["*.git"]}
+    ```
 </Tab>
 <Tab value="typescript" title="TypeScript">
-```typescript
-// exclude all Markdown files
-const dirOpts = { exclude: ["*.md*"] }
+    ```typescript
+    // exclude all Markdown files
+    const dirOpts = { exclude: ["*.md*"] }
 
-// include only the build output directory
-const dirOpts = { include: ["build"] }
+    // include only the build output directory
+    const dirOpts = { include: ["build"] }
 
-// include only ZIP files
-const dirOpts = { include: ["*.zip"] }
+    // include only ZIP files
+    const dirOpts = { include: ["*.zip"] }
 
-// exclude Git metadata
-const dirOpts = { exclude: ["*.git"] }
-```
-</Tab>
-<Tab value="php" title="PHP">
-```php
-// exclude all Markdown files
-$dirOpts = ['exclude' => ['*.md*']];
+    // exclude Git metadata
+    const dirOpts = { exclude: ["*.git"] }
+    ```
+    </Tab>
+    <Tab value="php" title="PHP">
+    ```php
+    // exclude all Markdown files
+    $dirOpts = ['exclude' => ['*.md*']];
 
-// include only the build output directory
-$dirOpts = ['include' => ['build']];
+    // include only the build output directory
+    $dirOpts = ['include' => ['build']];
 
-// include only ZIP files
-$dirOpts = ['include' => ['*.zip']];
+    // include only ZIP files
+    $dirOpts = ['include' => ['*.zip']];
 
-// exclude Git metadata
-$dirOpts = ['exclude' => ['*.git']];
-```
+    // exclude Git metadata
+    $dirOpts = ['exclude' => ['*.git']];
+    ```
 </Tab>
 <Tab value="java" title="Java">
-```java
-// exclude all Markdown files
-var dirOpts = new Container.WithDirectoryArguments()
-    .withExclude(List.of("*.md*"));
+    ```java
+    // exclude all Markdown files
+    var dirOpts = new Container.WithDirectoryArguments()
+        .withExclude(List.of("*.md*"));
 
-// include only the build output directory
-var dirOpts = new Container.WithDirectoryArguments()
-    .withInclude(List.of("build"));
+    // include only the build output directory
+    var dirOpts = new Container.WithDirectoryArguments()
+        .withInclude(List.of("build"));
 
-// include only ZIP files
-var dirOpts = new Container.WithDirectoryArguments()
-    .withInclude(List.of("*.zip"));
+    // include only ZIP files
+    var dirOpts = new Container.WithDirectoryArguments()
+        .withInclude(List.of("*.zip"));
 
-// exclude Git metadata
-var dirOpts = new Container.WithDirectoryArguments()
-    .withExclude(List.of("*.git"));
-```
+    // exclude Git metadata
+    var dirOpts = new Container.WithDirectoryArguments()
+        .withExclude(List.of("*.git"));
+    ```
 </Tab>
 </Tabs>
 
@@ -493,7 +527,8 @@ func (m *MyModule) Debug(
 ) *dagger.Directory {
   return source
 }
-```
+````
+
 </Tab>
 <Tab value="python" title="Python">
 ```python
@@ -541,80 +576,50 @@ public Directory debug(@Ignore({"*", "!analytics"}) Directory source) {
 Calling the function will show you the directory’s digest and top level entries. The digest is content addressed, so it changes if there are changes in the contents of the directory. Looking at the entries field you may be able to spot an interloper:
 
 <Tabs groupId="shell">
-<Tab value="System shell">
-```shell
-dagger -c 'debug .'
-```
-</Tab>
-<Tab value="Dagger Shell">
-```shell title="First type 'dagger' for interactive mode."
-debug .
-```
-</Tab>
-<Tab value="Dagger CLI">
-```shell
-dagger call debug --source=.
-```
-</Tab>
+  <Tab value="System shell">```shell dagger -c 'debug .' ```</Tab>
+  <Tab value="Dagger Shell">
+    ```shell title="First type 'dagger' for interactive mode." debug . ```
+  </Tab>
+  <Tab value="Dagger CLI">```shell dagger call debug --source=. ```</Tab>
 </Tabs>
 
 You can also list all files, recursively to check it more deeply:
 
 <Tabs groupId="shell">
-<Tab value="System shell">
-```shell
-dagger -c 'debug . | glob "**/*"'
-```
-</Tab>
-<Tab value="Dagger Shell">
-```shell title="First type 'dagger' for interactive mode."
-debug . | glob "**/*"
-```
-</Tab>
-<Tab value="Dagger CLI">
-```shell
-dagger call debug --source=. glob --pattern="**/*"
-```
-</Tab>
+  <Tab value="System shell">```shell dagger -c 'debug . | glob "**/*"' ```</Tab>
+  <Tab value="Dagger Shell">
+    ```shell title="First type 'dagger' for interactive mode." debug . | glob
+    "**/*" ```
+  </Tab>
+  <Tab value="Dagger CLI">
+    ```shell dagger call debug --source=. glob --pattern="**/*" ```
+  </Tab>
 </Tabs>
 
 You can open the directory in an interactive terminal to inspect the filesystem:
 
 <Tabs groupId="shell">
-<Tab value="System shell">
-```shell
-dagger -c 'debug . | terminal'
-```
-</Tab>
-<Tab value="Dagger Shell">
-```shell title="First type 'dagger' for interactive mode."
-debug . | terminal
-```
-</Tab>
-<Tab value="Dagger CLI">
-```shell
-dagger call debug --source=. terminal
-```
-</Tab>
+  <Tab value="System shell">```shell dagger -c 'debug . | terminal' ```</Tab>
+  <Tab value="Dagger Shell">
+    ```shell title="First type 'dagger' for interactive mode." debug . |
+    terminal ```
+  </Tab>
+  <Tab value="Dagger CLI">
+    ```shell dagger call debug --source=. terminal ```
+  </Tab>
 </Tabs>
 
 You can export the filtered directory to your host and check it with local tools:
 
 <Tabs groupId="shell">
-<Tab value="System shell">
-```shell
-dagger -c 'debug . | export audit'
-```
-</Tab>
-<Tab value="Dagger Shell">
-```shell title="First type 'dagger' for interactive mode."
-debug . | export audit
-```
-</Tab>
-<Tab value="Dagger CLI">
-```shell
-dagger call debug --source=. export --path=audit
-```
-</Tab>
+  <Tab value="System shell">
+    ```shell dagger -c 'debug . | export audit' ```
+  </Tab>
+  <Tab value="Dagger Shell">
+    ```shell title="First type 'dagger' for interactive mode." debug . | export
+    audit ```
+  </Tab>
+  <Tab value="Dagger CLI">
+    ```shell dagger call debug --source=. export --path=audit ```
+  </Tab>
 </Tabs>
-
