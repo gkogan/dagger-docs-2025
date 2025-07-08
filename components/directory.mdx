@@ -2,6 +2,8 @@
 title: "Directory"
 ---
 
+import { ShellTabs } from '/snippets/shell-tabs.jsx';
+
 The `Directory` type represents the state of a directory. This could be either a local directory path or a remote Git reference.
 
 ## Types
@@ -575,54 +577,24 @@ public Directory debug(@Ignore({"*", "!analytics"}) Directory source) {
 
 Calling the function will show you the directory’s digest and top level entries. The digest is content addressed, so it changes if there are changes in the contents of the directory. Looking at the entries field you may be able to spot an interloper:
 
-<Tabs groupId="shell">
-  <Tab value="System shell">```shell dagger -c 'debug .' ```</Tab>
-  <Tab value="Dagger Shell">
-    ```shell title="First type 'dagger' for interactive mode." debug . ```
-  </Tab>
-  <Tab value="Dagger CLI">```shell dagger call debug --source=. ```</Tab>
-</Tabs>
-
-You can also list all files, recursively to check it more deeply:
-
-<Tabs groupId="shell">
-  <Tab value="System shell">
-```shell dagger -c 'debug . | glob "**/*"' ```
-  </Tab>
-  <Tab value="Dagger Shell">
-```shell title="First type 'dagger' for interactive mode." debug . | glob
-"**/*" 
-```
-  </Tab>
-  <Tab value="Dagger CLI">
-```shell dagger call debug --source=. glob --pattern="**/*" ```
-  </Tab>
-</Tabs>
+<ShellTabs 
+systemShell="dagger -c 'debug .'"
+daggerShell="debug ."
+daggerCli="dagger call debug --source=."
+/>
 
 You can open the directory in an interactive terminal to inspect the filesystem:
 
-<Tabs groupId="shell">
-  <Tab value="System shell">```shell dagger -c 'debug . | terminal' ```</Tab>
-  <Tab value="Dagger Shell">
-    ```shell title="First type 'dagger' for interactive mode." debug . |
-    terminal ```
-  </Tab>
-  <Tab value="Dagger CLI">
-    ```shell dagger call debug --source=. terminal ```
-  </Tab>
-</Tabs>
+<ShellTabs
+systemShell="dagger -c 'debug . | terminal'"
+daggerShell="debug . | terminal"
+daggerCli="dagger call debug --source=. terminal"
+/>
 
 You can export the filtered directory to your host and check it with local tools:
 
-<Tabs groupId="shell">
-  <Tab value="System shell">
-    ```shell dagger -c 'debug . | export audit' ```
-  </Tab>
-  <Tab value="Dagger Shell">
-    ```shell title="First type 'dagger' for interactive mode." debug . | export
-    audit ```
-  </Tab>
-  <Tab value="Dagger CLI">
-    ```shell dagger call debug --source=. export --path=audit ```
-  </Tab>
-</Tabs>
+<ShellTabs
+systemShell="dagger -c 'debug . | export audit'"
+daggerShell="debug . | export audit"
+daggerCli="dagger call debug --source=. export --path=audit"
+/>

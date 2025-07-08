@@ -60,10 +60,18 @@
             "pages": [
               "engine/overview",
               "engine/local-development",
-              "engine/ci-integration",
               "engine/configuration",
               "engine/performance",
-              "engine/troubleshooting"
+              "engine/troubleshooting",
+              {
+                "group": "CI Integration",
+                "icon": "blocks",
+                "pages": [
+                  "engine/ci-integration/github-actions",
+                  "engine/ci-integration/gitlab-ci",
+                  "engine/ci-integration/azure-pipelines"
+                ]
+              }
             ]
           }
         ]
