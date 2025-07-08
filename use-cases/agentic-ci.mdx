@@ -1,33 +1,6 @@
 ---
-title: "Use Cases"
-description: "Dagger is a programmable engine that enables modular, language-agnostic workflows through reusable modules and seamless integration with cloud and AI tools."
+title: "Agentic CI"
 ---
-
-### Dagger Cloud
-
-Modules integrate seamlessly with Dagger Cloud, which offers a collaborative environment to manage modules, visualize dependencies, and trace executions.
-
-- A dedicated "Modules" tab in Dagger Cloud: See all your organization’s modules in one place, with metadata like engine versions, descriptions, and linked repositories, automatically pulled and synced from GitHub.
-- Views for better organization: Create filtered views of modules by team, service, or domain.
-- Documentation: See API documentation for each module and version, directly in the Dagger Cloud dashboard.
-- Version-aware navigation: View active branches and tags, ordered by recency.
-- Supply chain visibility: See exactly which modules your code depends on, and which depend on yours. This upstream/downstream awareness helps eliminate breakage and fosters stronger collaboration between teams.
-- Trace-to-module linkage: Trace failed runs or AI workflows back to the exact module versions that caused them.
-
-### The Daggerverse
-
-To make it easier to search and consume Dagger modules, the [Daggerverse](https://daggerverse.dev) is a free service run by Dagger, which indexes all publicly available Dagger modules. These might be Dagger modules developed by your team, your organization or the broader Dagger community. By importing and reusing these Dagger modules in your workflows and across your teams, you can significantly speed up development.
-
-### Learn more
-
-- [Create a module](../api/custom-functions.mdx)
-- [Call a remote module](../api/remote-modules.mdx)
-- [Understand module structure](../api/module-structure.mdx)
-- [Publish a module](../api/daggerverse.mdx)
-- [Use modules in Dagger Cloud](../configuration/cloud.mdx#modules)
-- [Find modules in the Daggerverse](https://daggerverse.dev)
-
-## Agentic CI
 
 Dagger can be used as a runtime and programming environment for AI agents. Dagger provides an `LLM` core type that enables native integration of Large Language Models (LLM) in your workflows.
 
@@ -155,5 +128,9 @@ Dagger uses your system's standard environment variables to route LLM requests. 
 
 Dagger provides [end-to-end tracing](./visualization.mdx) of prompts, tool calls, and even low-level system operations. All agent state changes are observable in real time.
 
-<VideoPlayer src="/img/current_docs/features/llm-cloud-trace.webm" alt="LLM observability example" />
+### Learn more
 
+- [Build an AI agent with our quickstart](../quickstart/agent/index.mdx)
+- [Browse examples of agentic workflows](../examples.mdx)
+- [Learn about the agent loop and how to work with LLM prompts and responses](../api/llm.mdx)
+- [Configure LLM endpoints](../configuration/llm.mdx)

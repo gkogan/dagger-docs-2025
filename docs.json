@@ -22,48 +22,39 @@
             "icon": "house",
             "pages": [
               "index",
-              "use-cases",
               "installation",
+              "quickstart/workflow",
+              "quickstart/core-concepts",
               "ide-setup"
             ]
           },
           {
-            "group": "Quickstart",
-            "icon": "rocket",
+            "group": "Use Cases",
+            "icon": "briefcase-conveyor-belt",
             "pages": [
-              "quickstart/basics",
-              "quickstart/workflow"
-            ]
-          },
-          {
-            "group": "Examples",
-            "icon": "lightbulb",
-            "pages": [
-              "examples",
-              "demos",
-              "livestreams"
+              "use-cases/modern-ci",
+              "use-cases/agentic-ci"
             ]
           },
           {
             "group": "Workflow Components",
             "icon": "list-check",
             "pages": [
-              "components/index"
+              "components/overview"
             ]
           }
         ]
       },
       {
-        "tab": "Dagger Cloud",
+        "tab": "Examples",
         "groups": [
           {
             "group": "Overview",
-            "icon": "cloud",
+            "icon": "lightbulb",
             "pages": [
-              "cloud/overview",
-              "cloud/organization",
-              "cloud/observability",
-              "cloud/module-catalog"
+              "examples/code",
+              "examples/demos",
+              "examples/livestreams"
             ]
           }
         ]
