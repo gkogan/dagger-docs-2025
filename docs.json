@@ -31,10 +31,7 @@
           {
             "group": "Use Cases",
             "icon": "briefcase-conveyor-belt",
-            "pages": [
-              "use-cases/modern-ci",
-              "use-cases/agentic-ci"
-            ]
+            "pages": ["use-cases/modern-ci", "use-cases/agentic-ci"]
           },
           {
             "group": "Components",
@@ -50,6 +47,18 @@
               "components/service",
               "components/environment"
             ]
+          },
+          {
+            "group": "Engine & Runtime",
+            "icon": "list-check",
+            "pages": [
+              "engine/overview",
+              "engine/local-development",
+              "engine/ci-integration",
+              "engine/configuration",
+              "engine/performance",
+              "engine/troubleshooting"
+            ]
           }
         ]
       },
@@ -59,11 +68,7 @@
           {
             "group": "Overview",
             "icon": "lightbulb",
-            "pages": [
-              "examples/code",
-              "examples/demos",
-              "examples/livestreams"
-            ]
+            "pages": ["examples/code", "examples/demos", "examples/livestreams"]
           }
         ]
       },
@@ -85,16 +90,13 @@
           }
         ]
       },
-  
       {
         "tab": "Reference",
         "icon": "code",
         "groups": [
           {
             "group": "CLI Reference",
-            "pages": [
-              "reference/cli/overview"
-            ]
+            "pages": ["reference/cli/overview"]
           },
           {
             "group": "API Documentation",
@@ -151,7 +153,7 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/dagger_id",
+      "x": "https://x.com/dagger_io",
       "github": "https://github.com/dagger",
       "linkedin": "https://www.linkedin.com/company/dagger-io"
     }
