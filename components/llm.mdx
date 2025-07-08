@@ -1,0 +1,101 @@
+---
+title: "Large Language Model (LLM)"
+sidebarTitle: "LLM"
+description: "Dagger's LLM component allows you to interact with Large Language Models (LLMs) to generate text, answer questions, and more."
+---
+
+Dagger's `LLM` core type includes API methods to attach objects to a Large Language Model (LLM), send prompts, and receive responses.
+
+<Note>
+  Dagger's LLM type can be configured via environment variables to use different LLM providers, such as OpenAI, Anthropic, or Google. Learn more about configuring the LLM component in the [Configuration](../configuration) section.
+</Note>
+
+## Prompts
+
+Use the `LLM.withPrompt()` API method to append prompts to the LLM context:
+
+<Tabs groupId="shell">
+<Tab title="System shell">
+```shell
+dagger <<EOF
+llm |
+  with-prompt "What tools do you have available?"
+EOF
+```
+</Tab>
+<Tab title="Dagger Shell">
+```shell title="First type 'dagger' for interactive mode."
+llm |
+  with-prompt "What tools do you have available?"
+```
+</Tab>
+</Tabs>
+
+For longer or more complex prompts, use the `LLM.withPromptFile()` API method to read the prompt from a text file:
+
+<Tabs groupId="shell">
+<Tab title="System shell">
+```shell
+dagger <<EOF
+llm |
+  with-prompt-file ./prompt.txt
+EOF
+```
+</Tab>
+<Tab title="Dagger Shell">
+```shell title="First type 'dagger' for interactive mode."
+llm |
+  with-prompt-file ./prompt.txt
+```
+</Tab>
+</Tabs>
+
+#### Responses and Variables
+
+Use the `LLM.lastReply()` API method to obtain the last reply from the LLM, or the `LLM.history()` API method to get the complete message history.
+
+<Important>
+  Most LLM services impose rate limits (restrictions on the number of requests
+  they will accept within a given time period). Dagger handles this gracefully
+  with built-in rate limit detection and automatic retry with exponential
+  backoff.
+</Important>
+
+Dagger supports the use of variables in prompts. This allows you to interpolate results of other operations into an LLM prompt:
+
+<Tabs groupId="shell">
+<Tab title="System shell">
+```shell
+dagger <<EOF
+source=\$(container |
+  from alpine |
+  with-directory /src https://github.com/dagger/dagger |
+  directory /src)
+environment=\$(env |
+  with-directory-input 'source' \$source 'a directory with source code')
+llm |
+  with-env \$environment |
+  with-prompt "The directory also has some tools available." |
+  with-prompt "Use the tools in the directory to read the first paragraph of the README.md file in the directory." |
+  with-prompt "Reply with only the selected text." |
+  last-reply
+EOF
+```
+</Tab>
+<Tab title="Dagger Shell">
+```shell title="First type 'dagger' for interactive mode."
+source=$(container |
+  from alpine |
+  with-directory /src https://github.com/dagger/dagger |
+  directory /src)
+environment=$(env |
+  with-directory-input 'source' $source 'a directory with source code')
+llm |
+  with-env $environment |
+  with-prompt "The directory also has some tools available." |
+  with-prompt "Use the tools in the directory to read the first paragraph of the README.md file in the directory." |
+  with-prompt "Reply with only the selected text." |
+  last-reply
+```
+</Tab>
+</Tabs>

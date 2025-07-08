@@ -37,10 +37,18 @@
             ]
           },
           {
-            "group": "Workflow Components",
+            "group": "Components",
             "icon": "list-check",
             "pages": [
-              "components/overview"
+              "components/overview",
+              "components/functions",
+              "components/container",
+              "components/directory",
+              "components/file",
+              "components/llm",
+              "components/secret",
+              "components/service",
+              "components/environment"
             ]
           }
         ]
