@@ -39,13 +39,19 @@
             "pages": [
               "components/overview",
               "components/functions",
-              "components/container",
-              "components/directory",
-              "components/file",
-              "components/llm",
-              "components/secret",
-              "components/service",
-              "components/environment"
+              {
+                "group": "Objects",
+                "icon": "chart-no-axes-gantt",
+                "pages": [
+                  "components/container",
+                  "components/directory",
+                  "components/file",
+                  "components/llm",
+                  "components/secret",
+                  "components/service",
+                  "components/environment"
+                ]
+              }
             ]
           },
           {

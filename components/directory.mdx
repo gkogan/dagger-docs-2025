@@ -586,13 +586,16 @@ Calling the function will show you the directory’s digest and top level entrie
 You can also list all files, recursively to check it more deeply:
 
 <Tabs groupId="shell">
-  <Tab value="System shell">```shell dagger -c 'debug . | glob "**/*"' ```</Tab>
+  <Tab value="System shell">
+```shell dagger -c 'debug . | glob "**/*"' ```
+  </Tab>
   <Tab value="Dagger Shell">
-    ```shell title="First type 'dagger' for interactive mode." debug . | glob
-    "**/*" ```
+```shell title="First type 'dagger' for interactive mode." debug . | glob
+"**/*" 
+```
   </Tab>
   <Tab value="Dagger CLI">
-    ```shell dagger call debug --source=. glob --pattern="**/*" ```
+```shell dagger call debug --source=. glob --pattern="**/*" ```
   </Tab>
 </Tabs>
 
