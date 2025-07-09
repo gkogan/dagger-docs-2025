@@ -19,54 +19,59 @@
         "groups": [
           {
             "group": "Getting Started",
-            "icon": "house",
             "pages": [
               "index",
-              "installation",
-              "quickstart/workflow",
-              "quickstart/core-concepts",
-              "ide-setup"
+              "docs/quickstart"
             ]
           },
           {
             "group": "Use Cases",
-            "pages": ["use-cases/modern-ci", "use-cases/agentic-ci"]
+            "pages": ["docs/use-cases/modern-ci", "docs/use-cases/agentic-ci"]
           },
           {
             "group": "Components",
             "pages": [
-              "functions/overview",
-              "functions/typed-objects",
-              "modules/overview"
+              "docs/dagger-functions",
+              "docs/typed-objects",
+              "docs/reusable-modules"
             ]
           },
           {
             "group": "Build Workflow",
             "pages": [
-              "workflow/build/create-chain-functions",
-              "workflow/build/ai-llm",
-              "workflow/build/use-modules",
-              "workflow/build/test-locally"
+              "docs/create-chain-functions",
+              "docs/ai-llm",
+              "docs/use-modules",
+              "docs/test-locally"
             ]
           },
           {
             "group": "Run Workflow",
             "pages": [
-              "workflow/run/run-dagger-shell",
-              "workflow/run/run-from-code",
-              "workflow/run/run-in-ci",
-              "workflow/run/debug-iterate"
+              "docs/run-dagger-shell",
+              "docs/run-from-code",
+              "docs/run-in-ci",
+              "docs/debug-iterate"
             ]
           },
           {
             "group": "Manage Workflow",
             "pages": [
-              "workflow/manage/secrets-config",
-              "workflow/manage/caching-performance",
-              "workflow/manage/observe-dagger-cloud",
-              "workflow/manage/share-version-modules",
-              "workflow/manage/troubleshoot-faq"
+              "docs/secrets-config",
+              "docs/caching-performance",
+              "docs/observe-dagger-cloud",
+              "docs/share-version-modules",
+              {
+                "group": "Troubleshoot",
+                "pages": [
+                  "docs/ide-troubleshooting"
+                ]
+              }
             ]
+          },
+          {
+            "group": "Admin",
+            "pages": ["docs/security"]
           }
         ]
       },
