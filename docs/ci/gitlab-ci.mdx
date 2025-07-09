@@ -1,0 +1,293 @@
+---
+title: "GitLab CI"
+description: "Replace YAML pipeline definitions in GitLab with programmable Dagger Functions"
+---
+
+Dagger enables replacing YAML pipeline definitions in GitLab with programmable container engine functions written in regular programming languages, allowing consistent local and remote pipeline execution with intelligent caching.
+
+## How it Works
+
+1. GitLab receives repository event trigger
+2. Processes stages/jobs in `.gitlab-ci.yml`
+3. Downloads Dagger CLI
+4. Executes Dagger CLI commands
+5. Finds/creates Dagger Engine in GitLab runner
+6. Calls specified Dagger Function
+7. Completes pipeline with logs
+
+## Prerequisites
+
+- GitLab repository
+- One of the following runner configurations:
+  - GitLab-hosted runners with Docker Machine executor
+  - Self-managed GitLab Runners with Docker executor
+  - Self-managed GitLab Runners in Kubernetes cluster
+
+## Examples
+
+### Docker Executor
+
+```yaml
+.docker:
+  image: docker:latest
+  services:
+    - docker:${DOCKER_VERSION}-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    DOCKER_VERSION: 20.10.16
+
+.dagger:
+  extends: [.docker]
+  before_script:
+    - apk add curl
+    - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+
+hello:
+  extends: [.dagger]
+  script:
+    - dagger -m github.com/shykes/daggerverse/hello@v0.1.2 call hello --greeting="bonjour" --name="monde"
+```
+
+### Kubernetes Executor
+
+```yaml
+.dagger:
+  image: alpine:latest
+  variables:
+    DAGGER_CLOUD_TOKEN: $DAGGER_CLOUD_TOKEN
+  before_script:
+    - apk add curl
+    - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/tmp sh
+    - export PATH="/tmp:$PATH"
+
+test:
+  extends: [.dagger]
+  script:
+    - dagger call test --source=.
+
+build:
+  extends: [.dagger]
+  script:
+    - dagger call build --source=.
+  dependencies:
+    - test
+```
+
+### Multi-Stage Pipeline
+
+```yaml
+variables:
+  DAGGER_CLOUD_TOKEN: $DAGGER_CLOUD_TOKEN
+  DOCKER_VERSION: 20.10.16
+
+stages:
+  - test
+  - build
+  - deploy
+
+.docker:
+  image: docker:latest
+  services:
+    - docker:${DOCKER_VERSION}-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+
+.dagger:
+  extends: [.docker]
+  before_script:
+    - apk add curl
+    - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+
+unit-tests:
+  extends: [.dagger]
+  stage: test
+  script:
+    - dagger call test-unit --source=.
+
+integration-tests:
+  extends: [.dagger]
+  stage: test
+  script:
+    - dagger call test-integration --source=.
+
+build-app:
+  extends: [.dagger]
+  stage: build
+  script:
+    - dagger call build --source=.
+  dependencies:
+    - unit-tests
+    - integration-tests
+
+deploy-staging:
+  extends: [.dagger]
+  stage: deploy
+  script:
+    - dagger call deploy --source=. --environment=staging
+  dependencies:
+    - build-app
+  only:
+    - develop
+
+deploy-production:
+  extends: [.dagger]
+  stage: deploy
+  script:
+    - dagger call deploy --source=. --environment=production
+  dependencies:
+    - build-app
+  only:
+    - main
+  when: manual
+```
+
+### Parallel Jobs
+
+```yaml
+.dagger:
+  image: alpine:latest
+  before_script:
+    - apk add curl
+    - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+
+test:
+  extends: [.dagger]
+  parallel:
+    matrix:
+      - TEST_SUITE: [unit, integration, e2e]
+  script:
+    - dagger call test --source=. --suite=$TEST_SUITE
+  variables:
+    DAGGER_CLOUD_TOKEN: $DAGGER_CLOUD_TOKEN
+```
+
+### With Caching
+
+```yaml
+.dagger:
+  image: alpine:latest
+  before_script:
+    - apk add curl
+    - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+  cache:
+    key: dagger-cache
+    paths:
+      - .dagger-cache/
+
+build:
+  extends: [.dagger]
+  script:
+    - export DAGGER_CACHE_PATH=.dagger-cache
+    - dagger call build --source=.
+  variables:
+    DAGGER_CLOUD_TOKEN: $DAGGER_CLOUD_TOKEN
+```
+
+## Configuration
+
+### Environment Variables
+
+Set these in your GitLab CI/CD variables:
+
+- `DAGGER_CLOUD_TOKEN`: Token for Dagger Cloud observability (mark as protected and masked)
+- Custom environment variables required by your Dagger Functions
+
+### GitLab Runner Requirements
+
+#### Docker Executor
+- Docker-in-Docker (DinD) service
+- Privileged mode enabled
+- Sufficient disk space for container operations
+
+#### Kubernetes Executor
+- Kubernetes cluster with container runtime
+- Appropriate resource limits and requests
+- Network policies allowing container communication
+
+### Runner Configuration
+
+#### Docker Executor (`config.toml`)
+```toml
+[[runners]]
+  name = "docker-dagger"
+  url = "https://gitlab.example.com/"
+  token = "your-token"
+  executor = "docker"
+  [runners.docker]
+    image = "docker:latest"
+    privileged = true
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock", "/cache"]
+```
+
+#### Kubernetes Executor
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitlab-runner-config
+data:
+  config.toml: |
+    [[runners]]
+      name = "kubernetes-dagger"
+      url = "https://gitlab.example.com/"
+      token = "your-token"
+      executor = "kubernetes"
+      [runners.kubernetes]
+        image = "alpine:latest"
+        privileged = true
+```
+
+## Best Practices
+
+### Security
+- Store sensitive tokens in GitLab CI/CD variables
+- Mark sensitive variables as protected and masked
+- Use least privilege principle for runner permissions
+- Regularly rotate access tokens
+
+### Performance
+- Use GitLab's cache feature for Dagger CLI and dependencies
+- Implement proper job dependencies to avoid unnecessary reruns
+- Use parallel jobs for independent tasks
+- Configure appropriate timeouts
+
+### Monitoring
+- Enable Dagger Cloud for workflow observability
+- Use GitLab's built-in CI/CD analytics
+- Set up alerts for pipeline failures
+- Monitor resource usage and costs
+
+### Pipeline Organization
+```yaml
+# Use includes for better organization
+include:
+  - local: '/.gitlab/ci/dagger-base.yml'
+  - local: '/.gitlab/ci/test-jobs.yml'
+  - local: '/.gitlab/ci/build-jobs.yml'
+  - local: '/.gitlab/ci/deploy-jobs.yml'
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Docker-in-Docker not working**: Ensure privileged mode is enabled
+2. **Dagger CLI not found**: Check PATH configuration in before_script
+3. **Network connectivity issues**: Verify runner network policies
+4. **Cache not working**: Ensure cache paths are correctly configured
+
+### Debug Mode
+
+Enable debug logging:
+
+```yaml
+variables:
+  DAGGER_LOG_LEVEL: debug
+  DOCKER_BUILDKIT: 1
+```

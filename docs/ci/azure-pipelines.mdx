@@ -1,0 +1,128 @@
+---
+title: "Azure Pipelines"
+description: "Replace YAML Azure Pipelines definitions with programmable Dagger Functions"
+---
+
+Dagger provides a programmable container engine that allows replacing YAML Azure Pipelines definitions with Dagger Functions written in a programming language. This enables executing pipelines consistently locally and in CI, with intelligent caching.
+
+## How it Works
+
+1. Azure Pipelines receives a repository event trigger
+2. Processes steps in `azure-pipelines.yml`
+3. Downloads Dagger CLI
+4. Executes Dagger CLI commands
+5. Finds or creates a Dagger Engine in the runner
+6. Calls specified Dagger Function
+7. Completes pipeline with logs
+
+## Prerequisites
+
+- Azure DevOps organization and project
+- Azure Pipelines agent to run jobs
+
+## Examples
+
+### Basic Example
+
+```yaml
+trigger:
+- main
+
+pool:
+  name: 'Azure Pipelines'
+  vmImage: ubuntu-latest
+
+steps:
+- script: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+  displayName: 'Install Dagger CLI'
+
+- script: dagger -m github.com/shykes/daggerverse/hello@v0.1.2 call hello --greeting="bonjour" --name="monde"
+  displayName: 'Call Dagger Function'
+  env:
+    DAGGER_CLOUD_TOKEN: $(DAGGER_CLOUD_TOKEN)
+```
+
+### Complex Example with Testing
+
+```yaml
+trigger:
+- main
+
+pool:
+  name: 'Azure Pipelines'
+  vmImage: ubuntu-latest
+
+variables:
+  DAGGER_CLOUD_TOKEN: $(DAGGER_CLOUD_TOKEN)
+
+steps:
+- script: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+  displayName: 'Install Dagger CLI'
+
+- script: dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call test --source=.
+  displayName: 'Run Tests'
+  env:
+    DAGGER_CLOUD_TOKEN: $(DAGGER_CLOUD_TOKEN)
+
+- script: dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call build --source=.
+  displayName: 'Build Application'
+  env:
+    DAGGER_CLOUD_TOKEN: $(DAGGER_CLOUD_TOKEN)
+```
+
+### Multi-Stage Pipeline
+
+```yaml
+trigger:
+- main
+
+pool:
+  name: 'Azure Pipelines'
+  vmImage: ubuntu-latest
+
+stages:
+- stage: Test
+  jobs:
+  - job: RunTests
+    steps:
+    - script: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      displayName: 'Install Dagger CLI'
+    - script: dagger call test --source=.
+      displayName: 'Run Tests'
+      env:
+        DAGGER_CLOUD_TOKEN: $(DAGGER_CLOUD_TOKEN)
+
+- stage: Build
+  dependsOn: Test
+  jobs:
+  - job: BuildApp
+    steps:
+    - script: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      displayName: 'Install Dagger CLI'
+    - script: dagger call build --source=.
+      displayName: 'Build Application'
+      env:
+        DAGGER_CLOUD_TOKEN: $(DAGGER_CLOUD_TOKEN)
+```
+
+## Configuration
+
+### Environment Variables
+
+Set these in your Azure DevOps pipeline variables:
+
+- `DAGGER_CLOUD_TOKEN`: Token for Dagger Cloud observability
+- Custom environment variables as needed by your Dagger Functions
+
+### Agent Requirements
+
+- Linux-based agent (ubuntu-latest recommended)
+- Docker support for container operations
+- Internet access for downloading Dagger CLI
+
+## Best Practices
+
+- Use Azure Key Vault for storing sensitive tokens
+- Cache Dagger CLI installation across pipeline runs
+- Set appropriate timeouts for long-running Dagger Functions
+- Use Azure Artifacts for caching build dependencies

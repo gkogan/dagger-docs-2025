@@ -1,0 +1,306 @@
+---
+title: "Add AI & LLMs"
+description: "Work with AI models and LLMs in your workflows"
+---
+
+AI and Large Language Models (LLMs) can be powerful tools in your Dagger workflows for tasks like code generation, documentation, testing, and content processing. Dagger provides built-in support for working with various AI providers and models.
+
+## Using the LLM Object
+
+The LLM object in Dagger provides a unified interface for working with different AI providers:
+
+```python
+# Initialize an LLM connection
+llm = dagger.llm("openai", api_key=api_key_secret)
+
+# Generate code
+generated_code = llm.generate(
+    prompt="Write a Python function that validates email addresses",
+    max_tokens=500
+)
+
+# Process existing code
+review_result = llm.analyze(
+    content=source_code,
+    task="Review this code for potential security issues"
+)
+```
+
+## Common AI Workflows
+
+### Code Generation
+
+Generate code as part of your build process:
+
+```python
+def generate_api_client(self, api_spec: dagger.File) -> dagger.Directory:
+    """Generate API client code from OpenAPI specification"""
+    llm = dagger.llm("openai")
+    
+    # Read the API specification
+    spec_content = api_spec.contents()
+    
+    # Generate client code
+    client_code = llm.generate(
+        prompt=f"Generate a Python API client for this OpenAPI spec: {spec_content}",
+        max_tokens=2000
+    )
+    
+    # Create a directory with the generated code
+    return (
+        dagger.directory()
+        .with_new_file("client.py", client_code)
+    )
+```
+
+### Documentation Generation
+
+Automatically generate documentation from code:
+
+```python
+def generate_docs(self, source_dir: dagger.Directory) -> dagger.Directory:
+    """Generate documentation from source code"""
+    llm = dagger.llm("anthropic")
+    
+    docs_dir = dagger.directory()
+    
+    # Process each source file
+    for file_path in source_dir.entries():
+        if file_path.endswith('.py'):
+            source_code = source_dir.file(file_path).contents()
+            
+            # Generate documentation
+            docs = llm.generate(
+                prompt=f"Generate comprehensive documentation for this Python code: {source_code}",
+                max_tokens=1000
+            )
+            
+            # Add to docs directory
+            docs_dir = docs_dir.with_new_file(f"{file_path}.md", docs)
+    
+    return docs_dir
+```
+
+### Code Review and Analysis
+
+Use AI to analyze code for issues:
+
+```python
+def ai_code_review(self, source_dir: dagger.Directory) -> str:
+    """Perform AI-powered code review"""
+    llm = dagger.llm("openai")
+    
+    review_results = []
+    
+    for file_path in source_dir.entries():
+        if file_path.endswith(('.py', '.js', '.ts')):
+            code = source_dir.file(file_path).contents()
+            
+            review = llm.analyze(
+                content=code,
+                task="Review this code for bugs, security issues, and best practices"
+            )
+            
+            review_results.append(f"## {file_path}\n{review}\n")
+    
+    return "\n".join(review_results)
+```
+
+### Test Generation
+
+Generate tests for your code:
+
+```python
+def generate_tests(self, source_file: dagger.File) -> dagger.File:
+    """Generate unit tests for source code"""
+    llm = dagger.llm("openai")
+    
+    source_code = source_file.contents()
+    
+    test_code = llm.generate(
+        prompt=f"Generate comprehensive unit tests for this code: {source_code}",
+        max_tokens=1500
+    )
+    
+    return dagger.directory().with_new_file("test_generated.py", test_code).file("test_generated.py")
+```
+
+## Working with Different Providers
+
+Dagger supports multiple AI providers:
+
+### OpenAI
+
+```python
+# GPT models
+openai_llm = dagger.llm("openai", model="gpt-4", api_key=openai_secret)
+
+# Generate with specific parameters
+result = openai_llm.generate(
+    prompt="Write a function to parse JSON",
+    max_tokens=300,
+    temperature=0.7
+)
+```
+
+### Anthropic Claude
+
+```python
+# Claude models
+claude_llm = dagger.llm("anthropic", model="claude-3-sonnet", api_key=claude_secret)
+
+# Analyze code
+analysis = claude_llm.analyze(
+    content=source_code,
+    task="Explain what this code does and suggest improvements"
+)
+```
+
+### Local Models
+
+```python
+# Local or self-hosted models
+local_llm = dagger.llm("local", endpoint="http://localhost:8080")
+
+result = local_llm.generate(prompt="Hello world")
+```
+
+## Best Practices
+
+### Managing API Keys
+
+Always use Dagger secrets for API keys:
+
+```python
+def ai_workflow(self):
+    # Use secrets for API keys
+    openai_key = dagger.set_secret("openai_key", "your-api-key")
+    
+    llm = dagger.llm("openai", api_key=openai_key)
+    
+    # Use the LLM in your workflow
+    result = llm.generate("Write a hello world function")
+    return result
+```
+
+### Error Handling
+
+Handle AI service failures gracefully:
+
+```python
+def robust_ai_workflow(self, source_code: str) -> str:
+    """AI workflow with error handling"""
+    try:
+        llm = dagger.llm("openai")
+        result = llm.generate(f"Improve this code: {source_code}")
+        return result
+    except Exception as e:
+        # Fallback to original code if AI fails
+        return f"AI processing failed: {e}\nOriginal code:\n{source_code}"
+```
+
+### Prompt Engineering
+
+Write clear, specific prompts for better results:
+
+```python
+def generate_with_context(self, code: str, requirements: str) -> str:
+    """Generate code with proper context"""
+    llm = dagger.llm("openai")
+    
+    prompt = f"""
+You are an expert software developer. 
+
+Requirements: {requirements}
+
+Existing code context:
+{code}
+
+Task: Generate additional code that meets the requirements and integrates well with the existing code.
+Please include:
+1. Clear comments explaining the logic
+2. Error handling where appropriate
+3. Type hints if using Python
+4. Unit tests for the new functionality
+
+Generated code:
+"""
+    
+    return llm.generate(prompt, max_tokens=2000)
+```
+
+### Rate Limiting and Costs
+
+Be mindful of API usage and costs:
+
+```python
+def batch_ai_processing(self, files: List[dagger.File]) -> dagger.Directory:
+    """Process files in batches to manage rate limits"""
+    llm = dagger.llm("openai")
+    results_dir = dagger.directory()
+    
+    # Process in smaller batches
+    batch_size = 5
+    for i in range(0, len(files), batch_size):
+        batch = files[i:i+batch_size]
+        
+        for file in batch:
+            content = file.contents()
+            
+            # Use shorter prompts to reduce token usage
+            summary = llm.generate(
+                prompt=f"Summarize this code in 2-3 sentences: {content}",
+                max_tokens=150
+            )
+            
+            results_dir = results_dir.with_new_file(f"summary_{i}.md", summary)
+        
+        # Add delay between batches if needed
+        # time.sleep(1)
+    
+    return results_dir
+```
+
+## Integration with Build Workflows
+
+Combine AI capabilities with other Dagger functions:
+
+```python
+def ai_enhanced_build(self, source_dir: dagger.Directory) -> dagger.Directory:
+    """Build workflow with AI enhancements"""
+    
+    # Standard build steps
+    built_app = (
+        dagger.container()
+        .from_("python:3.11")
+        .with_directory("/app", source_dir)
+        .with_workdir("/app")
+        .with_exec(["pip", "install", "-r", "requirements.txt"])
+    )
+    
+    # AI-powered code analysis
+    llm = dagger.llm("openai")
+    analysis = llm.analyze(
+        content=source_dir.file("main.py").contents(),
+        task="Analyze this code for performance bottlenecks"
+    )
+    
+    # Generate optimization suggestions
+    optimizations = llm.generate(
+        prompt=f"Based on this analysis: {analysis}, suggest specific code optimizations"
+    )
+    
+    # Include AI analysis in build artifacts
+    return (
+        built_app
+        .directory("/app")
+        .with_new_file("ai_analysis.md", analysis)
+        .with_new_file("optimization_suggestions.md", optimizations)
+    )
+```
+
+## Next Steps
+
+- Learn how to [use secrets](/workflow/build/use-secrets) to securely manage API keys
+- Explore [parallel operations](/workflow/build/run-parallel-operations) to process multiple AI requests concurrently
+- See [performance optimization](/workflow/build/optimize-performance) for managing AI workflow efficiency

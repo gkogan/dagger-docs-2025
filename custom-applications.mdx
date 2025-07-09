@@ -1,0 +1,438 @@
+---
+title: "Custom Applications"
+description: "Build custom applications using Dagger SDKs instead of Dagger Functions"
+---
+
+Instead of using Dagger Functions, you can build custom applications using the Dagger SDK directly. This approach gives you more control over the application structure and allows direct host access.
+
+## When to Use Custom Applications
+
+**Use custom applications when you need:**
+- Direct host access (files, environment variables, network)
+- Custom application structure and control flow
+- Integration with existing non-Dagger tooling
+- Complex conditional logic that doesn't fit well in Functions
+
+**Use Dagger Functions when you need:**
+- Cross-language interoperability
+- Easy sharing and reuse via modules
+- Automatic caching and optimization
+- Integration with the broader Dagger ecosystem
+
+## SDK Installation
+
+<Tabs groupId="language" queryString="sdk">
+<Tab value="go" title="Go">
+
+<Note>
+The Dagger Go SDK requires [Go 1.22 or later](https://go.dev/doc/install).
+</Note>
+
+Install the Dagger Go SDK:
+
+```shell
+go get dagger.io/dagger@latest
+go mod tidy
+```
+
+</Tab>
+<Tab value="python" title="Python">
+
+<Note>
+The Dagger Python SDK requires [Python 3.10 or later](https://docs.python.org/3/using/index.html).
+</Note>
+
+Install the Dagger Python SDK:
+
+```shell
+# Using uv
+uv add dagger-io
+
+# Using pip
+pip install dagger-io
+```
+
+</Tab>
+<Tab value="typescript" title="TypeScript">
+
+<Note>
+The Dagger TypeScript SDK requires [TypeScript 5.0 or later](https://www.typescriptlang.org/download/) and supports Node.js (stable) and Bun (experimental).
+</Note>
+
+Install the Dagger TypeScript SDK:
+
+```shell
+# Using npm
+npm install @dagger.io/dagger@latest --save-dev
+
+# Using yarn
+yarn add @dagger.io/dagger --dev
+```
+
+</Tab>
+<Tab value="php" title="PHP">
+
+<Note>
+The Dagger PHP SDK requires [PHP 8.2 or later](https://www.php.net/downloads.php).
+</Note>
+
+Install the Dagger PHP SDK:
+
+```shell
+composer require dagger/dagger
+```
+
+</Tab>
+</Tabs>
+
+## Basic Structure
+
+All custom applications follow the same pattern:
+
+1. **Initialize** a Dagger client
+2. **Define** your workflow logic
+3. **Execute** using `dagger run`
+
+<Tabs groupId="language" queryString="sdk">
+<Tab value="go" title="Go">
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    
+    "dagger.io/dagger"
+)
+
+func main() {
+    ctx := context.Background()
+    
+    // Initialize Dagger client
+    client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stderr))
+    if err != nil {
+        panic(err)
+    }
+    defer client.Close()
+    
+    // Your workflow logic here
+    if err := build(ctx, client); err != nil {
+        panic(err)
+    }
+}
+
+func build(ctx context.Context, client *dagger.Client) error {
+    // Build workflow
+    output, err := client.Container().
+        From("golang:1.21").
+        WithDirectory("/src", client.Host().Directory(".")).
+        WithWorkdir("/src").
+        WithExec([]string{"go", "build", "-o", "app"}).
+        File("/src/app").
+        Export(ctx, "./app")
+    
+    if err != nil {
+        return err
+    }
+    
+    fmt.Printf("Built application: %s\n", output)
+    return nil
+}
+```
+
+</Tab>
+<Tab value="python" title="Python">
+
+```python
+import asyncio
+import sys
+import dagger
+
+async def main():
+    # Initialize Dagger client
+    async with dagger.Connection(dagger.Config(log_output=sys.stderr)) as client:
+        # Your workflow logic here
+        await build(client)
+
+async def build(client: dagger.Client):
+    """Build workflow"""
+    # Build application
+    output = await (
+        client.container()
+        .from_("python:3.11")
+        .with_directory("/app", client.host().directory("."))
+        .with_workdir("/app")
+        .with_exec(["python", "-m", "build"])
+        .directory("/app/dist")
+        .export("./dist")
+    )
+    
+    print(f"Built application: {output}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+</Tab>
+<Tab value="typescript" title="TypeScript">
+
+```typescript
+import { connect } from "@dagger.io/dagger"
+
+// Initialize Dagger client and run workflow
+connect(async (client) => {
+    await build(client)
+})
+
+async function build(client: any) {
+    // Build workflow
+    const output = await client
+        .container()
+        .from("node:18")
+        .withDirectory("/app", client.host().directory("."))
+        .withWorkdir("/app")
+        .withExec(["npm", "run", "build"])
+        .directory("/app/dist")
+        .export("./dist")
+    
+    console.log(`Built application: ${output}`)
+}
+```
+
+</Tab>
+<Tab value="php" title="PHP">
+
+```php
+<?php
+
+require_once 'vendor/autoload.php';
+
+use Dagger\Client;
+use Dagger\Connection;
+
+function main(): void {
+    // Initialize Dagger client
+    Connection::connect(function (Client $client) {
+        build($client);
+    });
+}
+
+function build(Client $client): void {
+    // Build workflow
+    $output = $client
+        ->container()
+        ->from('php:8.2')
+        ->withDirectory('/app', $client->host()->directory('.'))
+        ->withWorkdir('/app')
+        ->withExec(['composer', 'install'])
+        ->directory('/app/vendor')
+        ->export('./vendor');
+    
+    echo "Built application: $output\n";
+}
+
+main();
+```
+
+</Tab>
+</Tabs>
+
+## Multi-Platform Build Example
+
+This example demonstrates building for multiple platforms:
+
+<Tabs groupId="language" queryString="sdk">
+<Tab value="go" title="Go">
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    "path/filepath"
+    "sync"
+    
+    "dagger.io/dagger"
+)
+
+func main() {
+    ctx := context.Background()
+    
+    client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stderr))
+    if err != nil {
+        panic(err)
+    }
+    defer client.Close()
+    
+    if err := multiBuild(ctx, client); err != nil {
+        panic(err)
+    }
+}
+
+func multiBuild(ctx context.Context, client *dagger.Client) error {
+    // Build matrix
+    platforms := []struct {
+        os   string
+        arch string
+    }{
+        {"linux", "amd64"},
+        {"linux", "arm64"},
+        {"darwin", "amd64"},
+        {"darwin", "arm64"},
+    }
+    
+    var wg sync.WaitGroup
+    
+    for _, platform := range platforms {
+        wg.Add(1)
+        go func(os, arch string) {
+            defer wg.Done()
+            
+            buildPath := filepath.Join("build", os, arch)
+            
+            _, err := client.Container().
+                From("golang:1.21").
+                WithDirectory("/src", client.Host().Directory(".")).
+                WithWorkdir("/src").
+                WithEnvVariable("GOOS", os).
+                WithEnvVariable("GOARCH", arch).
+                WithExec([]string{"go", "build", "-o", "app"}).
+                File("/src/app").
+                Export(ctx, filepath.Join(buildPath, "app"))
+            
+            if err != nil {
+                fmt.Printf("Build failed for %s/%s: %v\n", os, arch, err)
+                return
+            }
+            
+            fmt.Printf("Built for %s/%s\n", os, arch)
+        }(platform.os, platform.arch)
+    }
+    
+    wg.Wait()
+    return nil
+}
+```
+
+</Tab>
+<Tab value="python" title="Python">
+
+```python
+import asyncio
+import sys
+import dagger
+
+async def main():
+    async with dagger.Connection(dagger.Config(log_output=sys.stderr)) as client:
+        await multi_build(client)
+
+async def multi_build(client: dagger.Client):
+    """Build for multiple Python versions"""
+    versions = ["3.8", "3.9", "3.10", "3.11"]
+    
+    tasks = []
+    for version in versions:
+        tasks.append(build_version(client, version))
+    
+    # Run builds concurrently
+    await asyncio.gather(*tasks)
+
+async def build_version(client: dagger.Client, version: str):
+    """Build and test for specific Python version"""
+    print(f"Starting build for Python {version}")
+    
+    try:
+        result = await (
+            client.container()
+            .from_(f"python:{version}")
+            .with_directory("/app", client.host().directory("."))
+            .with_workdir("/app")
+            .with_exec(["pip", "install", "-e", "."])
+            .with_exec(["python", "-m", "pytest"])
+            .stdout()
+        )
+        
+        print(f"Build for Python {version} succeeded!")
+        
+    except Exception as e:
+        print(f"Build for Python {version} failed: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+</Tab>
+</Tabs>
+
+## Execution
+
+Run your custom application using `dagger run`:
+
+<Tabs groupId="language" queryString="sdk">
+<Tab value="go" title="Go">
+
+```shell
+dagger run go run main.go
+```
+
+</Tab>
+<Tab value="python" title="Python">
+
+```shell
+dagger run python main.py
+```
+
+</Tab>
+<Tab value="typescript" title="TypeScript">
+
+```shell
+dagger run node --loader ts-node/esm main.ts
+```
+
+</Tab>
+<Tab value="php" title="PHP">
+
+```shell
+dagger run php main.php
+```
+
+</Tab>
+</Tabs>
+
+## Comparison with Dagger Functions
+
+|  | Dagger Functions | Custom Applications |
+|:---|:---|:---|
+| Pre-initialized Dagger API client | ✅ | ❌ |
+| Direct host access | ❌ | ✅ |
+| Direct third-party module access | ✅ | ❌ |
+| Cross-language interoperability | ✅ | ❌ |
+| Automatic caching | ✅ | ⚠️ Manual |
+| Sharing and reuse | ✅ Easy | ❌ Manual |
+
+## Best Practices
+
+**Structure your application:**
+- Separate client initialization from business logic
+- Use proper error handling
+- Structure code for maintainability
+
+**Handle concurrency:**
+- Use language-appropriate concurrency patterns
+- Be careful with shared state
+- Consider rate limiting for external services
+
+**Resource management:**
+- Properly close clients and connections
+- Use context cancellation where appropriate
+- Monitor resource usage
+
+## Next Steps
+
+- Learn about [chaining functions](/workflow/build/chain-functions) for complex workflows
+- Explore [parallel operations](/workflow/build/run-parallel-operations) for concurrent builds
+- See [local development](/workflow/build/develop-locally) for development workflows

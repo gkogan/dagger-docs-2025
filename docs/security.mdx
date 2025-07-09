@@ -1,0 +1,269 @@
+---
+title: "Security"
+description: "Learn about Dagger's security-first design, sandboxing, and secret management capabilities"
+---
+
+Dagger is secure by design. All Dagger Functions are fully "sandboxed" and do not have direct access to the host system. Dagger also natively supports reading secrets from multiple secret providers and has built-in safeguards to ensure that secrets do not leak into the open.
+
+## Sandboxing
+
+Dagger is built to protect your host environment by default. This means that Dagger Functions cannot access host resources - such as the host environment, host services, host filesystem, or host SSH agent - unless you explicitly grant permission by passing them as arguments.
+
+Dagger's security model treats the top-level module (i.e., the main function or highest-level call) as the single place where sensitive resources are introduced. It is only through this call that a user can explicitly provide directories, services, sockets, or secrets. In turn, the top-level module may pass these resources to other installed modules if needed, but there is never any implicit sharing.
+
+<Important>
+By requiring typed arguments such as `Directory`, `Socket`, `Service`, or `Secret`, Dagger ensures users understand exactly what they are sharing with a Dagger Function. This explicit access design helps prevent malicious or untrusted modules from inadvertently obtaining sensitive data.
+</Important>
+
+### Security Benefits
+
+**Reproducibility**: Executing in a well-defined and well-controlled container ensures that a Dagger Function runs the same way every time it is invoked. It also guards against creating "hidden dependencies" on ambient properties of the execution environment that could change at any moment.
+
+**Caching**: A reproducible containerized environment makes it possible to cache the result of Dagger Function execution, which in turn allows Dagger to automatically speed up operations.
+
+**Security**: Even when running third-party Dagger Functions sourced from a Git repository, those Dagger Functions will not have default access to your host environment (host files, directories, environment variables, etc.). Access to these host resources can only be granted by explicitly passing them as argument values to the Dagger Function.
+
+## Secrets
+
+Dagger also natively supports the use of confidential information ("secrets") such as passwords, API keys, SSH keys, and access tokens. These secrets can be sourced from different secret providers, including the host environment, the host filesystem, the result of host command execution, and external secret managers [1Password](https://1password.com/) and [Vault](https://www.hashicorp.com/products/vault).
+
+<Important>
+Dagger has built-in safeguards to ensure that secrets are used without exposing them in plaintext logs, writing them into the filesystem of containers you're building, or inserting them into the cache. This ensures that sensitive data does not leak - for example, in the event of a crash.
+</Important>
+
+### Secret Management Example
+
+Here's an example of a Dagger Function that uses a GitHub personal access token as a secret:
+
+<Tabs groupId="language" queryString="sdk">
+<Tab value="go" title="Go">
+```go
+package main
+
+import (
+    "context"
+    "dagger/my-module/internal/dagger"
+)
+
+type MyModule struct{}
+
+func (m *MyModule) GitHubAPI(ctx context.Context, token *dagger.Secret) (string, error) {
+    return dag.Container().
+        From("alpine:latest").
+        WithSecretVariable("GITHUB_TOKEN", token).
+        WithExec([]string{"apk", "add", "curl"}).
+        WithExec([]string{"sh", "-c", "curl -H 'Authorization: token $GITHUB_TOKEN' https://api.github.com/user"}).
+        Stdout(ctx)
+}
+```
+</Tab>
+<Tab value="python" title="Python">
+```python
+import dagger
+from dagger import dag, function, object_type
+
+@object_type
+class MyModule:
+    @function
+    async def github_api(self, token: dagger.Secret) -> str:
+        return await (
+            dag.container()
+            .from_("alpine:latest")
+            .with_secret_variable("GITHUB_TOKEN", token)
+            .with_exec(["apk", "add", "curl"])
+            .with_exec(["sh", "-c", "curl -H 'Authorization: token $GITHUB_TOKEN' https://api.github.com/user"])
+            .stdout()
+        )
+```
+</Tab>
+<Tab value="typescript" title="TypeScript">
+```typescript
+import { dag, Container, Secret, object, func } from "@dagger.io/dagger"
+
+@object()
+export class MyModule {
+    @func()
+    async githubApi(token: Secret): Promise<string> {
+        return dag
+            .container()
+            .from("alpine:latest")
+            .withSecretVariable("GITHUB_TOKEN", token)
+            .withExec(["apk", "add", "curl"])
+            .withExec(["sh", "-c", "curl -H 'Authorization: token $GITHUB_TOKEN' https://api.github.com/user"])
+            .stdout()
+    }
+}
+```
+</Tab>
+<Tab value="php" title="PHP">
+```php
+<?php
+
+use Dagger\Attribute\DaggerFunction;
+use Dagger\Attribute\DaggerObject;
+use Dagger\Secret;
+
+use function Dagger\dag;
+
+#[DaggerObject]
+class MyModule
+{
+    #[DaggerFunction]
+    public function githubApi(Secret $token): string
+    {
+        return dag()
+            ->container()
+            ->from('alpine:latest')
+            ->withSecretVariable('GITHUB_TOKEN', $token)
+            ->withExec(['apk', 'add', 'curl'])
+            ->withExec(['sh', '-c', 'curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user'])
+            ->stdout();
+    }
+}
+```
+</Tab>
+<Tab value="java" title="Java">
+```java
+import io.dagger.client.Secret;
+import io.dagger.module.annotation.Function;
+import io.dagger.module.annotation.Object;
+import java.util.List;
+
+import static io.dagger.client.Dagger.dag;
+
+@Object
+public class MyModule {
+    @Function
+    public String githubApi(Secret token) throws Exception {
+        return dag()
+            .container()
+            .from("alpine:latest")
+            .withSecretVariable("GITHUB_TOKEN", token)
+            .withExec(List.of("apk", "add", "curl"))
+            .withExec(List.of("sh", "-c", "curl -H 'Authorization: token $GITHUB_TOKEN' https://api.github.com/user"))
+            .stdout();
+    }
+}
+```
+</Tab>
+</Tabs>
+
+### Secret Sources
+
+Dagger supports multiple secret sources for maximum flexibility:
+
+#### Host Environment Variables
+
+```shell
+# Set environment variable
+export GITHUB_TOKEN=your-token-here
+
+# Use in Dagger
+dagger call github-api --token=env:GITHUB_TOKEN
+```
+
+#### Host Files
+
+```shell
+# Store secret in file
+echo "your-token-here" > github-token.txt
+
+# Use in Dagger
+dagger call github-api --token=file:./github-token.txt
+```
+
+#### Command Output
+
+```shell
+# Use command output as secret
+dagger call github-api --token=cmd:"gh auth token"
+```
+
+#### External Secret Managers
+
+**1Password Integration:**
+
+```shell
+# Set service account token
+export OP_SERVICE_ACCOUNT_TOKEN="your-service-account-token"
+
+# Use 1Password secret reference
+dagger call github-api --token=op://vault/item/field
+```
+
+**HashiCorp Vault Integration:**
+
+```shell
+# Configure Vault
+export VAULT_ADDR='https://vault.example.com:8200'
+export VAULT_TOKEN='your-vault-token'
+
+# Use Vault secret
+dagger call github-api --token=vault://secret/data/github.token
+```
+
+### Secret Caching
+
+When a `Secret` is included in operations, the layer cache entries for those operations will be based on the plaintext value of the secret. If the same operation is run with a secret with the same plaintext value, that operation may be cached rather than re-executed.
+
+For example, if two clients execute a container with a secret whose plaintext values are the same, the container execution may be cached. Otherwise, if the plaintext values are different, the container execution will not be cached.
+
+### Best Practices
+
+**Use Appropriate Secret Sources:**
+- Use environment variables for development and testing
+- Use external secret managers for production environments
+- Use file-based secrets for CI/CD pipelines
+
+**Minimize Secret Exposure:**
+- Only pass secrets to functions that need them
+- Use the most restrictive secret scope possible
+- Regularly rotate secrets and API keys
+
+**Monitor Secret Usage:**
+- Use Dagger Cloud to monitor secret usage in workflows
+- Implement alerting for unexpected secret access patterns
+- Audit secret access regularly
+
+## Host Resource Access
+
+Dagger Functions require explicit permission to access host resources. This includes:
+
+**File System Access:**
+- Must pass `Directory` or `File` arguments explicitly
+- No implicit access to host file system
+- Default paths can be configured but must be explicitly defined
+
+**Network Access:**
+- Services must be passed as `Service` arguments
+- No implicit network access to host services
+- Socket access requires explicit `Socket` arguments
+
+**Environment Variables:**
+- No automatic inheritance of host environment
+- Must pass environment variables explicitly as arguments
+- Use `Secret` type for sensitive environment variables
+
+## Security Considerations
+
+**Third-Party Modules:**
+- Review module source code before using
+- Understand what resources you're granting access to
+- Use official or trusted community modules when possible
+
+**Resource Sharing:**
+- Be explicit about what resources you share
+- Use typed arguments to understand resource requirements
+- Implement least-privilege access patterns
+
+**Container Security:**
+- Dagger Functions run in isolated containers
+- No privileged access by default
+- Standard container security practices apply
+
+## Learn More
+
+- [Use secrets in workflows](/workflow/build/use-secrets)
+- [Connect to services](/workflow/build/connect-services)
+- [Handle files and directories](/workflow/build/handle-files)
+- [Dagger Cloud security features](/workflow/manage/observe-dagger-cloud)

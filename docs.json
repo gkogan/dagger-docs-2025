@@ -10,7 +10,7 @@
   "favicon": "/favicon.png",
   "banner": {
     "dismissible": true,
-    "content": "Join Our Engineering Deep Dive on Agentic CI [Register Now](https://dagger.io/deep-dives/agentic-ci)"
+    "content": "Engineering deep dive on Agentic CI — [Register Now](https://dagger.io/deep-dives/agentic-ci)"
   },
   "navigation": {
     "tabs": [
@@ -19,60 +19,71 @@
         "groups": [
           {
             "group": "Getting Started",
-            "icon": "house",
             "pages": [
               "index",
-              "installation",
-              "quickstart/workflow",
-              "quickstart/core-concepts",
-              "ide-setup"
+              "docs/quickstart"
             ]
           },
           {
             "group": "Use Cases",
-            "icon": "briefcase-conveyor-belt",
-            "pages": ["use-cases/modern-ci", "use-cases/agentic-ci"]
+            "pages": ["docs/use-cases/modern-ci", "docs/use-cases/agentic-ci"]
           },
           {
             "group": "Components",
-            "icon": "list-check",
             "pages": [
-              "components/overview",
-              "components/functions",
+              "docs/dagger-functions",
+              "docs/typed-objects",
+              "docs/reusable-modules"
+            ]
+          },
+          {
+            "group": "Build Workflow",
+            "pages": [
+              "docs/create-chain-functions",
+              "docs/ai-llm",
+              "docs/use-modules",
+              "docs/test-locally"
+            ]
+          },
+          {
+            "group": "Run Workflow",
+            "pages": [
+              "docs/run-dagger-shell",
+              "docs/run-from-code",
               {
-                "group": "Objects",
-                "icon": "chart-no-axes-gantt",
+                "group": "Run in CI",
                 "pages": [
-                  "components/container",
-                  "components/directory",
-                  "components/file",
-                  "components/llm",
-                  "components/secret",
-                  "components/service",
-                  "components/environment"
+                  "docs/ci/github-actions",
+                  "docs/ci/gitlab-ci",
+                  "docs/ci/azure-pipelines",
+                  "docs/ci/circleci",
+                  "docs/ci/jenkins",
+                  "docs/ci/aws-codebuild",
+                  "docs/ci/argo-workflows",
+                  "docs/ci/tekton"
+                ]
+              },
+              "docs/debug-iterate"
+            ]
+          },
+          {
+            "group": "Manage Workflow",
+            "pages": [
+              "docs/secrets-config",
+              "docs/caching-performance",
+              "docs/observe-dagger-cloud",
+              "docs/share-version-modules",
+              {
+                "group": "Troubleshoot",
+                "pages": [
+                  "docs/ide-troubleshooting"
                 ]
               }
             ]
           },
           {
-            "group": "Engine & Runtime",
-            "icon": "list-check",
-            "pages": [
-              "engine/overview",
-              "engine/local-development",
-              "engine/configuration",
-              "engine/performance",
-              "engine/troubleshooting",
-              {
-                "group": "CI Integration",
-                "icon": "blocks",
-                "pages": [
-                  "engine/ci-integration/github-actions",
-                  "engine/ci-integration/gitlab-ci",
-                  "engine/ci-integration/azure-pipelines"
-                ]
-              }
-            ]
+            "group": "Admin",
+            "pages": ["docs/security"]
           }
         ]
       },
@@ -83,22 +94,6 @@
             "group": "Overview",
             "icon": "lightbulb",
             "pages": ["examples/code", "examples/demos", "examples/livestreams"]
-          }
-        ]
-      },
-      {
-        "tab": "Extending Dagger",
-        "groups": [
-          {
-            "group": "Overview",
-            "icon": "plug",
-            "pages": [
-              "extending/overview",
-              "extending/arguments",
-              "extending/return-values",
-              "extending/default-paths",
-              "extending/custom-applications"
-            ]
           }
         ]
       },

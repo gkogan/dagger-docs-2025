@@ -1,0 +1,79 @@
+---
+title: "IDE not recognizing Dagger Functions"
+description: "Troubleshoot IDE support for autocomplete, type checking, and other features when writing Dagger Functions."
+---
+
+After running `dagger develop`, your IDE should automatically recognize Dagger Functions and provide autocomplete, type checking, and other language features. If these features aren't working, try the following solutions:
+
+<Tabs groupId="language" queryString="sdk">
+<Tab value="go" title="Go">
+Dagger creates a separate `go.mod` file for your module. To get IDE features like autocompletion and go-to-definition across your entire project, set up a Go workspace:
+
+```shell
+# in the root of your repository
+go work init
+go work use ./                    # your main project
+go work use ./path/to/dagger/module  # your dagger module
+```
+
+Add workspace files to `.gitignore` (they're for local development only):
+
+```shell
+echo go.work >> .gitignore
+echo go.work.sum >> .gitignore
+```
+
+Restart your IDE to enable full language support for your Dagger Functions.
+
+</Tab>
+<Tab value="python" title="Python">
+For IDE features like autocompletion and type checking, install dependencies in a virtual environment:
+
+```shell
+# Using uv (recommended)
+uv sync
+
+# Using pip
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.lock -e ./sdk -e .
+```
+
+Open your IDE in the directory containing `.venv` and `pyproject.toml`. Most IDEs will automatically detect the virtual environment and provide full language support.
+
+</Tab>
+<Tab value="typescript" title="TypeScript">
+The generated module includes a `tsconfig.json` file that maps the Dagger SDK to your local generated code:
+
+```json
+"paths": {
+  "@dagger.io/dagger": ["./sdk"]
+}
+```
+
+This configuration enables your IDE to provide autocompletion, type checking, and go-to-definition for Dagger Functions without any additional setup.
+
+</Tab>
+<Tab value="php" title="PHP">
+The generated module includes a `composer.json` file that references the local Dagger SDK:
+
+```json
+"repositories": [
+  {
+    "type": "path",
+    "url": "./sdk"
+  }
+],
+"require": {
+  "dagger/dagger": "*@dev"
+}
+```
+
+Open your IDE in the directory containing `composer.json`. Most PHP IDEs will automatically recognize the Dagger package and provide autocompletion and type hints.
+</Tab>
+<Tab value="java" title="Java">
+The generated module creates a standard Maven project structure with a `pom.xml` file. Import this directory into your IDE as a Maven project.
+
+Your IDE will automatically recognize the Dagger dependencies and provide code completion. Generated code is placed in `target/generated-sources` and automatically excluded from version control.
+</Tab>
+</Tabs>

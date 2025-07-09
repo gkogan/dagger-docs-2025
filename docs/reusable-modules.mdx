@@ -1,0 +1,228 @@
+---
+title: "Reusable Modules"
+description: "Packages for creating, sharing, and reusing Dagger Functions across different programming languages"
+---
+
+import InitProject from '/snippets/init-project.mdx';
+
+Modules are packages for creating, sharing, and reusing Dagger Functions across different programming languages. When a module is loaded, the Dagger API is dynamically extended with new functions, allowing you to call both core functions and custom Dagger Functions from that module.
+
+## Why Use Modules?
+
+**Reusability**: Write complex automation logic once and use it across multiple projects
+**Sharing**: Distribute automation tools across teams and the broader community  
+**Composability**: Combine modules to create more powerful workflows
+**Consistency**: Ensure the same automation logic runs identically across environments
+
+## Module Structure
+
+Each module has a consistent structure across programming languages:
+
+- **Configuration file** (`dagger.json`) - Contains module metadata and dependencies
+- **Source code directory** - Language-specific implementation files
+- **Dependency management** - Language-native package files (e.g., `go.mod`, `pyproject.toml`)
+- **SDK directories** - Generated code and runtime resources
+
+## Creating Modules
+
+Creating a Dagger module allows you to package custom automation logic into reusable Dagger Functions that can be shared and used across different projects.
+
+### Initialize a Dagger Module
+
+<InitProject />
+
+### Create a Dagger Function
+
+Here's an example of a Dagger Function which calls a remote API method and returns the result:
+
+<Tabs groupId="language" queryString="sdk">
+<TabItem value="go" title="Go">
+
+Update the `main.go` file with the following code:
+
+```go file=./snippets/functions/functions-complex/go/main.go
+```
+
+This Dagger Function includes the context as input and error as return in its signature.
+</TabItem>
+<TabItem value="python" title="Python">
+
+Update the `src/my_module/main.py` file with the following code:
+
+```python file=./snippets/functions/functions-complex/python/main.py
+```
+
+Dagger Functions are implemented as [@dagger.function][@function] decorated methods, of a [@dagger.object_type][@object_type] decorated class.
+
+It's possible for a module to implement multiple classes (*object types*), but **the first one needs to have a name that matches the module's name**, in *PascalCase*. This object is sometimes referred to as the *main object*.
+
+[@function]: https://dagger-io.readthedocs.io/en/latest/module.html#dagger.function
+[@object_type]: https://dagger-io.readthedocs.io/en/latest/module.html#dagger.object_type
+</TabItem>
+<TabItem value="typescript" title="TypeScript">
+
+Update the `src/index.ts` file with the following code:
+
+```typescript file=./snippets/functions/functions-complex/typescript/index.ts
+```
+</TabItem>
+<TabItem value="php" title="PHP">
+
+Update the `src/MyModule.php` file with the following code:
+
+```php file=./snippets/functions/functions-complex/php/src/MyModule.php
+```
+</TabItem>
+<TabItem value="java" title="Java">
+
+Update the `src/main/java/io/dagger/modules/mymodule/MyModule.java` file with the following code:
+
+```java file=./snippets/functions/functions-complex/java/src/main/java/io/dagger/modules/mymodule/MyModule.java
+```
+
+Dagger Functions must be public. The function must be decorated with the `@Function` annotation and the class containing the functions must be decorated with the `@Object` annotation.
+</TabItem>
+</Tabs>
+
+### Development Environment
+
+Use `dagger develop --sdk=...` to set up local development resources. When implementing Dagger Functions, you can write arbitrary code that executes inside the module's container with access to the Dagger API and standard libraries.
+
+## Using Modules
+
+Modules can be used in two primary ways: using your own locally developed modules, and using modules shared by others from remote Git repositories.
+
+### Using Your Own Modules
+
+Once you've created a module, you can use it locally:
+
+```shell
+# Call a function from your local module
+dagger call my-function --arg=value
+
+# Call with multiple arguments
+dagger call build-go --source=./src --version=1.21
+
+# Interactive mode
+dagger
+my-function --arg=value
+```
+
+### Using Remote Modules
+
+Remote modules allow you to use Dagger Functions from modules hosted in remote Git repositories.
+
+#### Installing Remote Modules
+
+```shell
+# Install from Git repository
+dagger install github.com/example/my-module
+
+# Install specific version
+dagger install github.com/example/my-module@v1.2.3
+```
+
+#### Direct Usage
+
+Use modules directly from Git repositories with HTTPS or SSH authentication:
+
+```shell
+# HTTPS authentication
+dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call \
+  build --source=./src --args=./cmd/app
+
+# SSH authentication
+dagger -m git@github.com:kpenfound/dagger-modules/golang@v0.2.0 call \
+  build --source=./src --args=./cmd/app
+```
+
+### Module Dependencies
+
+- Modules can depend on other modules, creating a dependency chain
+- Dependencies are automatically resolved and installed
+- All dependencies are tracked in your `dagger.json` file
+- Supports transitive dependencies and semantic versioning
+
+## Sharing Modules
+
+Once you've created useful modules, you can share them through public or private channels.
+
+### Public Sharing via Daggerverse
+
+Daggerverse is the public registry for Dagger modules, making it easy to discover and use community-contributed automation.
+
+**Publishing to Daggerverse:**
+1. Ensure your module is in a public Git repository
+2. Tag your releases using semantic versioning (e.g., `v1.0.0`)
+3. Submit to Daggerverse through the publishing process
+4. Maintain documentation and examples for users
+
+**Benefits:**
+- Community discovery and collaboration
+- Shared maintenance burden
+- Recognition as an automation contributor
+
+### Private Sharing with Teams
+
+For organizations using Dagger Cloud, you can share modules privately within your team:
+
+- **Host private modules** in internal repositories
+- **Control access** with team-based permissions
+- **Manage versions** and dependencies privately
+- **Integrate with existing workflows** and CI/CD systems
+
+### Git Repository Sharing
+
+You can also share modules through any Git repository:
+
+```shell
+# Public repositories
+dagger install github.com/user/repo
+
+# Private repositories with SSH
+dagger install git@github.com:user/private-repo
+```
+
+## Module Discovery
+
+**Finding Modules:**
+- Browse Daggerverse for public modules
+- Search GitHub for Dagger modules
+- Browse internal modules in your organization
+- Community resources and documentation
+
+**Evaluating Modules:**
+- Check documentation quality and examples
+- Review maintenance activity and community adoption
+- Assess security practices and code quality
+- Consider version stability and update frequency
+
+## Best Practices
+
+### For Module Publishers
+
+- **Clear Documentation**: Provide comprehensive README and function documentation
+- **Semantic Versioning**: Use proper versioning for releases
+- **Testing**: Include tests and CI/CD pipelines
+- **Examples**: Provide usage examples and common patterns
+
+### For Module Users
+
+- **Pin Versions**: Pin to specific versions for reproducible builds
+- **Update Strategy**: Establish processes for updating module versions
+- **Testing**: Test module updates in development environments
+- **Rollback Plans**: Have rollback strategies for problematic updates
+
+## Module Execution Environment
+
+Dagger Functions execute within containers spawned by the Dagger Engine. This "sandboxing" serves important purposes:
+
+1. **Reproducibility**: Executing in a well-defined container ensures Dagger Functions run the same way every time
+2. **Caching**: A reproducible environment enables automatic caching of function results
+3. **Security**: Functions don't have default access to your host environment - access must be explicitly granted
+
+## Next Steps
+
+- Learn about [Dagger Functions](/functions/overview) to understand the foundation
+- Explore [Typed Objects](/functions/typed-objects) to work with Dagger's core types
+- See the complete API reference for detailed method documentation

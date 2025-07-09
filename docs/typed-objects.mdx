@@ -1,0 +1,232 @@
+---
+title: "Typed Objects"
+description: "Type-safe objects that form the building blocks of Dagger workflows"
+---
+
+Typed Objects are the core building blocks you work with in Dagger. They represent various resources and data structures that you can create, manipulate, and chain together to build powerful containerized workflows. These objects are type-safe, immutable, and provide a consistent interface across all supported programming languages.
+
+## Key Characteristics
+
+- **Type Safety**: Objects are strongly typed, preventing runtime errors and enabling IDE support
+- **Immutability**: Operations return new objects rather than modifying existing ones
+- **Chainability**: Objects can be chained together using fluent method calls
+- **Cross-Language**: Same objects work consistently across Go, Python, TypeScript, and other SDKs
+
+## Core Object Types
+
+### Container
+
+Represents a containerized environment for running commands and processes. This is the primary object for executing operations.
+
+```python
+# Create a container and run commands
+result = (
+    dagger.container()
+    .from_("python:3.11")
+    .with_exec(["pip", "install", "requests"])
+    .with_exec(["python", "-c", "print('Hello from container')"])
+    .stdout()
+)
+```
+
+**Common operations:**
+- `.from_()` - Set base image
+- `.with_exec()` - Execute commands
+- `.with_file()` - Add files to container
+- `.with_directory()` - Mount directories
+- `.with_env_variable()` - Set environment variables
+
+### Directory
+
+Represents a directory tree that can be mounted into containers or manipulated as a filesystem unit.
+
+```python
+# Work with directories
+source_dir = dagger.host().directory("./src")
+built_app = (
+    dagger.container()
+    .from_("node:18")
+    .with_directory("/app", source_dir)
+    .with_workdir("/app")
+    .with_exec(["npm", "install"])
+    .with_exec(["npm", "run", "build"])
+    .directory("/app/dist")
+)
+```
+
+**Common operations:**
+- `.with_file()` - Add files to directory
+- `.without_file()` - Remove files from directory
+- `.entries()` - List directory contents
+- `.export()` - Export directory to host
+
+### File
+
+Represents individual files that can be read, written, and shared between containers.
+
+```python
+# Work with files
+config_file = dagger.host().file("./config.json")
+processed_file = (
+    dagger.container()
+    .from_("alpine")
+    .with_file("/input.json", config_file)
+    .with_exec(["sed", "s/dev/prod/g", "/input.json"])
+    .file("/input.json")
+)
+```
+
+**Common operations:**
+- `.contents()` - Read file contents
+- `.export()` - Export file to host
+- `.with_timestamps()` - Set file timestamps
+
+### Service
+
+Represents long-running services that can be accessed by other containers in your workflow.
+
+```python
+# Start a database service
+database = (
+    dagger.container()
+    .from_("postgres:15")
+    .with_env_variable("POSTGRES_PASSWORD", "secret")
+    .with_exposed_port(5432)
+    .as_service()
+)
+
+# Use the service in another container
+app = (
+    dagger.container()
+    .from_("python:3.11")
+    .with_service_binding("db", database)
+    .with_exec(["python", "app.py"])
+)
+```
+
+**Common operations:**
+- `.as_service()` - Convert container to service
+- `.with_service_binding()` - Bind service to container
+- `.endpoint()` - Get service endpoint
+
+### Secret
+
+Represents sensitive data that can be securely passed to containers without exposing the values.
+
+```python
+# Use secrets securely
+api_key = dagger.set_secret("api_key", "secret-value")
+result = (
+    dagger.container()
+    .from_("alpine")
+    .with_secret_variable("API_KEY", api_key)
+    .with_exec(["curl", "-H", "Authorization: Bearer $API_KEY", "https://api.example.com"])
+)
+```
+
+**Common operations:**
+- `.with_secret_variable()` - Set secret as environment variable
+- `.with_mounted_secret()` - Mount secret as file
+
+### Environment
+
+Represents environment variables and configuration that can be shared across containers.
+
+```python
+# Set environment variables
+env_vars = {"NODE_ENV": "production", "PORT": "3000"}
+app = (
+    dagger.container()
+    .from_("node:18")
+    .with_env_variable("NODE_ENV", "production")
+    .with_env_variable("PORT", "3000")
+    .with_exec(["npm", "start"])
+)
+```
+
+### LLM
+
+Represents integrations with large language models for AI-powered workflows.
+
+```python
+# Use LLM for code generation
+llm = dagger.llm("openai")
+generated_code = (
+    llm.generate("Write a Python function that sorts a list")
+)
+```
+
+## Working with Typed Objects
+
+### Chaining Operations
+
+Objects are designed to be chained together in fluent, readable workflows:
+
+```python
+# Complex workflow chaining multiple objects
+result = (
+    dagger.host()
+    .directory("./src")                    # Directory object
+    .with_file("config.json", config_file) # Add File object
+    .pipe(lambda src:                      # Pass to container
+        dagger.container()
+        .from_("python:3.11")
+        .with_directory("/app", src)       # Mount Directory
+        .with_workdir("/app")
+        .with_exec(["python", "main.py"])
+        .stdout()
+    )
+)
+```
+
+### Type Safety Benefits
+
+Strong typing provides immediate feedback and prevents common errors:
+
+```python
+# This will catch type errors at development time
+container = dagger.container().from_("python:3.11")
+directory = dagger.host().directory("./src")
+
+# Type-safe: Directory can be mounted to Container
+container.with_directory("/app", directory)
+
+# Type error: Cannot mount Container to Container
+# container.with_directory("/app", container)  # This would fail
+```
+
+## Best Practices
+
+### Object Reuse
+
+Objects are immutable, so you can safely reuse them:
+
+```python
+base_container = dagger.container().from_("python:3.11")
+
+# Both containers start from the same base
+app_container = base_container.with_directory("/app", source_dir)
+test_container = base_container.with_directory("/tests", test_dir)
+```
+
+### Error Handling
+
+Use appropriate error handling for object operations:
+
+```python
+try:
+    result = (
+        dagger.container()
+        .from_("python:3.11")
+        .with_exec(["python", "--version"])
+        .stdout()
+    )
+except Exception as e:
+    print(f"Failed to get Python version: {e}")
+```
+
+## Next Steps
+
+- Learn how to create custom object types in [Dagger Functions](/functions/overview)
+- Explore packaging and sharing in [Reusable Modules](/modules/overview)
+- See the complete API reference for detailed method documentation

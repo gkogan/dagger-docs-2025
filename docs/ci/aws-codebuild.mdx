@@ -1,0 +1,257 @@
+---
+title: "AWS CodeBuild"
+description: "Migrate AWS CodeBuild specifications into programmable Dagger Functions"
+---
+
+Dagger provides a programmable container engine that allows migrating most AWS CodeBuild specifications into Dagger Functions, enabling consistent pipeline execution locally and in AWS CodeBuild with intelligent caching and portability.
+
+## How it Works
+
+1. AWS CodeBuild receives a repository event trigger
+2. Processes build instructions in `buildspec.yml`
+3. Downloads Dagger CLI
+4. Executes Dagger CLI commands
+5. Finds or creates a Dagger Engine
+6. Calls specified Dagger Function
+7. Completes pipeline with success/failure status
+
+## Prerequisites
+
+- AWS CodeBuild project connected to a source code repository
+- IAM permissions for CodeBuild to access required AWS services
+
+## Examples
+
+### Basic Example
+
+```yaml
+version: 0.2
+env:
+  secrets-manager:
+    DAGGER_CLOUD_TOKEN: "arn:aws:secretsmanager:region:account:secret:dagger_cloud_token"
+phases:
+  install:
+    commands:
+      - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - export PATH=$PATH:$HOME/.local/bin/
+  build:
+    commands:
+      - dagger -m github.com/shykes/daggerverse/hello@v0.1.2 call hello --greeting="bonjour" --name="monde"
+```
+
+### Complex Example with Testing and Container Publishing
+
+```yaml
+version: 0.2
+env:
+  secrets-manager:
+    DAGGER_CLOUD_TOKEN: "arn:aws:secretsmanager:region:account:secret:dagger_cloud_token"
+    DOCKER_REGISTRY_TOKEN: "arn:aws:secretsmanager:region:account:secret:docker_token"
+phases:
+  install:
+    commands:
+      - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - export PATH=$PATH:$HOME/.local/bin/
+  pre_build:
+    commands:
+      - echo "Running tests..."
+      - dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call test --source=.
+  build:
+    commands:
+      - echo "Building application..."
+      - dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call build --source=.
+  post_build:
+    commands:
+      - echo "Publishing container..."
+      - dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call publish --source=. --registry=registry.example.com --token=env:DOCKER_REGISTRY_TOKEN
+```
+
+### Multi-Environment Build
+
+```yaml
+version: 0.2
+env:
+  variables:
+    ENVIRONMENT: "staging"
+  secrets-manager:
+    DAGGER_CLOUD_TOKEN: "arn:aws:secretsmanager:region:account:secret:dagger_cloud_token"
+    AWS_ACCESS_KEY_ID: "arn:aws:secretsmanager:region:account:secret:aws_access_key"
+    AWS_SECRET_ACCESS_KEY: "arn:aws:secretsmanager:region:account:secret:aws_secret_key"
+phases:
+  install:
+    commands:
+      - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - export PATH=$PATH:$HOME/.local/bin/
+  pre_build:
+    commands:
+      - echo "Testing for environment $ENVIRONMENT"
+      - dagger call test --source=. --environment=$ENVIRONMENT
+  build:
+    commands:
+      - echo "Building for environment $ENVIRONMENT"
+      - dagger call build --source=. --environment=$ENVIRONMENT
+  post_build:
+    commands:
+      - echo "Deploying to $ENVIRONMENT"
+      - dagger call deploy --source=. --environment=$ENVIRONMENT --aws-access-key=env:AWS_ACCESS_KEY_ID --aws-secret-key=env:AWS_SECRET_ACCESS_KEY
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'build'
+```
+
+### Batch Build Configuration
+
+```yaml
+version: 0.2
+batch:
+  fast-fail: false
+  build-list:
+    - identifier: test
+      env:
+        variables:
+          BUILD_PHASE: "test"
+    - identifier: build
+      env:
+        variables:
+          BUILD_PHASE: "build"
+      depend-on:
+        - test
+    - identifier: deploy
+      env:
+        variables:
+          BUILD_PHASE: "deploy"
+      depend-on:
+        - build
+env:
+  secrets-manager:
+    DAGGER_CLOUD_TOKEN: "arn:aws:secretsmanager:region:account:secret:dagger_cloud_token"
+phases:
+  install:
+    commands:
+      - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - export PATH=$PATH:$HOME/.local/bin/
+  build:
+    commands:
+      - |
+        case $BUILD_PHASE in
+          test)
+            dagger call test --source=.
+            ;;
+          build)
+            dagger call build --source=.
+            ;;
+          deploy)
+            dagger call deploy --source=. --environment=production
+            ;;
+        esac
+```
+
+## Configuration
+
+### Environment Variables
+
+Set these in your CodeBuild project or buildspec.yml:
+
+- `DAGGER_CLOUD_TOKEN`: Token for Dagger Cloud observability
+- Custom environment variables required by your Dagger Functions
+
+### AWS Secrets Manager Integration
+
+Store sensitive data in AWS Secrets Manager:
+
+```yaml
+env:
+  secrets-manager:
+    DAGGER_CLOUD_TOKEN: "arn:aws:secretsmanager:us-east-1:123456789012:secret:dagger_cloud_token-AbCdEf"
+    API_KEY: "arn:aws:secretsmanager:us-east-1:123456789012:secret:api_key-XyZabc"
+```
+
+### IAM Permissions
+
+Your CodeBuild service role needs these permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:region:account:secret:dagger_cloud_token*",
+        "arn:aws:secretsmanager:region:account:secret:other_secrets*"
+      ]
+    }
+  ]
+}
+```
+
+## Best Practices
+
+### Caching
+
+Use CodeBuild caching to speed up builds:
+
+```yaml
+cache:
+  type: S3
+  location: my-bucket/dagger-cache
+```
+
+### Artifacts
+
+Configure artifacts for build outputs:
+
+```yaml
+artifacts:
+  files:
+    - 'dist/**/*'
+    - 'build/**/*'
+  name: myapp-$(date +%Y-%m-%d)
+```
+
+### Logging
+
+Enable CloudWatch logs for better observability:
+
+- Configure log group name in CodeBuild project
+- Set appropriate log retention policies
+- Use structured logging in Dagger Functions
+
+### Resource Optimization
+
+- Choose appropriate compute type for your workloads
+- Use privileged mode only when necessary
+- Implement proper timeout settings
+- Monitor build duration and costs
+
+## Integration with AWS Services
+
+### ECR Integration
+
+```yaml
+env:
+  variables:
+    AWS_DEFAULT_REGION: us-east-1
+    AWS_ACCOUNT_ID: 123456789012
+    IMAGE_REPO_NAME: my-app
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  build:
+    commands:
+      - dagger call publish --source=. --registry=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+```
+
+### S3 Integration
+
+```yaml
+phases:
+  post_build:
+    commands:
+      - dagger call upload-to-s3 --source=./dist --bucket=my-deployment-bucket --region=us-east-1
+```

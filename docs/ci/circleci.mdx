@@ -1,0 +1,192 @@
+---
+title: "CircleCI"
+description: "Replace YAML workflows in CircleCI with programmable Dagger Functions"
+---
+
+Dagger provides a programmable container engine that allows replacing YAML workflows in CircleCI with Dagger Functions written in programming languages. This enables executing pipelines consistently locally and in CI, with intelligent caching.
+
+## How it Works
+
+1. CircleCI receives a repository event trigger
+2. CircleCI processes jobs in `.circleci/config.yml`
+3. CircleCI downloads Dagger CLI
+4. CircleCI executes Dagger CLI commands
+5. Dagger CLI finds/creates a Dagger Engine
+6. Dagger Function is called, potentially sending telemetry
+7. Pipeline completes with logs in CircleCI
+
+<Note>
+In a Dagger context, you won't have access to CircleCI's test splitting functionality.
+</Note>
+
+## Prerequisites
+
+- CircleCI project
+- GitHub/Bitbucket/GitLab repository connected
+- Docker (for non-docker execution environments)
+
+## Examples
+
+### Simple Hello Function
+
+```yaml
+version: 2.1
+jobs:
+  hello:
+    docker:
+      - image: cimg/base:2024.09
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Install Dagger CLI
+          command: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - run:
+          name: Call Dagger Function
+          command: dagger -m github.com/shykes/daggerverse/hello@v0.1.2 call hello --greeting="bonjour" --name="monde"
+workflows:
+  dagger:
+    jobs:
+      - hello
+```
+
+### Complex Workflow with Go Application
+
+```yaml
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/base:2024.09
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install Dagger CLI
+          command: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - run:
+          name: Test
+          command: dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call test --source=.
+          environment:
+            DAGGER_CLOUD_TOKEN: << pipeline.parameters.dagger-cloud-token >>
+  
+  build:
+    docker:
+      - image: cimg/base:2024.09
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install Dagger CLI
+          command: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - run:
+          name: Build
+          command: dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call build --source=.
+          environment:
+            DAGGER_CLOUD_TOKEN: << pipeline.parameters.dagger-cloud-token >>
+
+parameters:
+  dagger-cloud-token:
+    type: string
+    default: ""
+
+workflows:
+  test-and-build:
+    jobs:
+      - test
+      - build:
+          requires:
+            - test
+```
+
+### Multi-Environment Pipeline
+
+```yaml
+version: 2.1
+
+executors:
+  dagger-executor:
+    docker:
+      - image: cimg/base:2024.09
+    environment:
+      DAGGER_CLOUD_TOKEN: << pipeline.parameters.dagger-cloud-token >>
+
+jobs:
+  test:
+    executor: dagger-executor
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install Dagger CLI
+          command: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - run:
+          name: Run Tests
+          command: dagger call test --source=.
+
+  deploy-staging:
+    executor: dagger-executor
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install Dagger CLI
+          command: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - run:
+          name: Deploy to Staging
+          command: dagger call deploy --environment=staging --source=.
+
+  deploy-production:
+    executor: dagger-executor
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install Dagger CLI
+          command: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - run:
+          name: Deploy to Production
+          command: dagger call deploy --environment=production --source=.
+
+parameters:
+  dagger-cloud-token:
+    type: string
+    default: ""
+
+workflows:
+  test-and-deploy:
+    jobs:
+      - test
+      - deploy-staging:
+          requires:
+            - test
+          filters:
+            branches:
+              only: develop
+      - deploy-production:
+          requires:
+            - test
+          filters:
+            branches:
+              only: main
+```
+
+## Configuration
+
+### Environment Variables
+
+- `DAGGER_CLOUD_TOKEN`: Token for Dagger Cloud observability
+- Custom environment variables required by your Dagger Functions
+
+### CircleCI Features
+
+- Use `setup_remote_docker` for Docker operations
+- Leverage CircleCI's parameter system for configuration
+- Use executors to share common configuration
+- Implement proper workflow dependencies with `requires`
+
+## Best Practices
+
+- Store sensitive tokens in CircleCI environment variables
+- Use CircleCI's caching features for Dagger CLI installation
+- Implement proper branch filtering for deployment jobs
+- Use workspace persistence for sharing artifacts between jobs
