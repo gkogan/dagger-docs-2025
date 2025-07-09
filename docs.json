@@ -30,47 +30,42 @@
           },
           {
             "group": "Use Cases",
-            "icon": "briefcase-conveyor-belt",
             "pages": ["use-cases/modern-ci", "use-cases/agentic-ci"]
           },
           {
             "group": "Components",
             "pages": [
-              "components/overview",
-              "components/functions",
-              {
-                "group": "Objects",
-                "icon": "chart-no-axes-gantt",
-                "pages": [
-                  "components/container",
-                  "components/directory",
-                  "components/file",
-                  "components/llm",
-                  "components/secret",
-                  "components/service",
-                  "components/environment"
-                ]
-              }
+              "functions/overview",
+              "functions/typed-objects",
+              "modules/overview"
             ]
           },
           {
-            "group": "Engine & Runtime",
-            "icon": "list-check",
+            "group": "Build Workflow",
             "pages": [
-              "engine/overview",
-              "engine/local-development",
-              "engine/configuration",
-              "engine/performance",
-              "engine/troubleshooting",
-              {
-                "group": "CI Integration",
-                "icon": "blocks",
-                "pages": [
-                  "engine/ci-integration/github-actions",
-                  "engine/ci-integration/gitlab-ci",
-                  "engine/ci-integration/azure-pipelines"
-                ]
-              }
+              "workflow/build/create-chain-functions",
+              "workflow/build/ai-llm",
+              "workflow/build/use-modules",
+              "workflow/build/test-locally"
+            ]
+          },
+          {
+            "group": "Run Workflow",
+            "pages": [
+              "workflow/run/run-dagger-shell",
+              "workflow/run/run-from-code",
+              "workflow/run/run-in-ci",
+              "workflow/run/debug-iterate"
+            ]
+          },
+          {
+            "group": "Manage Workflow",
+            "pages": [
+              "workflow/manage/secrets-config",
+              "workflow/manage/caching-performance",
+              "workflow/manage/observe-dagger-cloud",
+              "workflow/manage/share-version-modules",
+              "workflow/manage/troubleshoot-faq"
             ]
           }
         ]
@@ -82,22 +77,6 @@
             "group": "Overview",
             "icon": "lightbulb",
             "pages": ["examples/code", "examples/demos", "examples/livestreams"]
-          }
-        ]
-      },
-      {
-        "tab": "Extending Dagger",
-        "groups": [
-          {
-            "group": "Overview",
-            "icon": "plug",
-            "pages": [
-              "extending/overview",
-              "extending/arguments",
-              "extending/return-values",
-              "extending/default-paths",
-              "extending/custom-applications"
-            ]
           }
         ]
       },

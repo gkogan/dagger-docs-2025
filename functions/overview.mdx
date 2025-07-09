@@ -1,0 +1,158 @@
+---
+title: "Dagger Functions"
+description: "The fundamental unit of computing in Dagger - sandboxed, type-safe functions that run in containers"
+---
+
+Dagger Functions are the fundamental unit of computing in Dagger. A **Dagger Function** is a sandboxed, type-safe function that always runs in its own container and can use first-class objects like Container, Directory, Secret, and more.
+
+## What Makes Dagger Functions Special
+
+<table>
+<tr><th>Ordinary language function</th><th>Dagger Function</th></tr>
+<tr><td>Runs in the host process</td><td>Runs in an isolated container</td></tr>
+<tr><td>Gets plain strings & ints</td><td>Gets rich typed objects: Container, Directory, Secret, …</td></tr>
+<tr><td>Language-specific</td><td>Callable from any language once it's in a Module</td></tr>
+<tr><td>No built-in caching</td><td>Results are automatically cached & content-addressed</td></tr>
+</table>
+
+## Core Objects
+
+Dagger provides several core objects that form the foundation of your workflows:
+
+- **[Container](/functions/container)** - Create and manage containerized environments for running commands and processes
+- **[Directory](/functions/directory)** - Work with directory trees that can be mounted into containers
+- **[File](/functions/file)** - Handle individual files that can be read, written, and shared between containers
+- **[Service](/functions/service)** - Manage long-running services that can be accessed by other containers
+- **[Secret](/functions/secret)** - Handle sensitive data that can be securely passed to containers
+- **[Environment](/functions/environment)** - Manage environment variables and configuration
+- **[LLM](/functions/llm)** - Integrate with large language models for AI-powered workflows
+
+## Working with Functions
+
+Think of a Function as a reusable component you snap into a bigger workflow. Functions in Dagger are immutable and chainable, allowing you to build complex workflows by combining simple operations.
+
+```python
+# Example: Chain operations across different functions
+result = (
+    dagger
+    .container()
+    .from_("python:3.11")
+    .with_directory("/app", source_dir)
+    .with_workdir("/app")
+    .with_exec(["pip", "install", "-r", "requirements.txt"])
+    .with_exec(["python", "app.py"])
+)
+```
+
+## Create Your Own Custom Functions
+
+In addition to the core functions, you can create your own custom functions and object types in Dagger. These custom functions can be packaged in modules and composed with other core functions.
+
+### Custom Object Types
+
+When you create a Dagger module, you can define custom object types that represent domain-specific concepts in your workflows. These object types can have their own methods and can be returned from or passed to Dagger Functions.
+
+#### Example: Custom Build Result Object
+
+```python
+@dagger.object_type
+class BuildResult:
+    artifact: dagger.File
+    logs: str
+    success: bool
+    
+    @dagger.function
+    def publish(self, registry: str) -> str:
+        # Custom method to publish the build artifact
+        return (
+            dagger.container()
+            .from_("alpine")
+            .with_file("/artifact", self.artifact)
+            .with_exec(["publish", "--registry", registry])
+            .stdout()
+        )
+```
+
+### Multiple Object Types in a Module
+
+A single module can implement multiple object types, giving you the flexibility to create comprehensive toolkits:
+
+```python
+@dagger.object_type
+class MyBuildTools:  # Main object (matches module name)
+    @dagger.function
+    def build_go(self, source: dagger.Directory) -> BuildResult:
+        # Build Go application
+        pass
+    
+    @dagger.function
+    def test_go(self, source: dagger.Directory) -> dagger.Container:
+        # Run Go tests
+        pass
+
+@dagger.object_type  
+class Database:  # Additional object type
+    @dagger.function
+    def postgres(self, version: str) -> dagger.Service:
+        # Start PostgreSQL service
+        pass
+    
+    @dagger.function
+    def migrate(self, source: dagger.Directory) -> dagger.Container:
+        # Run database migrations
+        pass
+```
+
+### Object Type Requirements
+
+- **Main object naming**: The first object type must have a name that matches the module's name in PascalCase
+- **Function decoration**: All functions must be decorated with `@dagger.function`
+- **Object decoration**: All object types must be decorated with `@dagger.object_type`
+- **Type annotations**: Use proper type annotations for parameters and return values
+
+### Composing with Core Functions
+
+Custom object types work seamlessly with core functions:
+
+```python
+@dagger.function
+def deploy_app(self, build_result: BuildResult, target: str) -> dagger.Container:
+    return (
+        dagger.container()
+        .from_("ubuntu:20.04")
+        .with_file("/app", build_result.artifact)
+        .with_exec(["deploy", "--target", target])
+    )
+```
+
+## Default Paths
+
+For Directory and File arguments, you can set default paths that Dagger will use when no value is specified:
+
+```python
+@dagger.function
+def build_app(
+    self,
+    # Set default path to current directory
+    source: Annotated[dagger.Directory, dagger.DefaultPath(".")],
+    output_dir: Annotated[dagger.Directory, dagger.DefaultPath("./build")]
+) -> dagger.Container:
+    """Build application with default source and output directories"""
+    return (
+        dagger.container()
+        .from_("node:18")
+        .with_directory("/app", source)
+        .with_exec(["npm", "run", "build"])
+        .with_directory("/app/build", output_dir)
+    )
+```
+
+**Important notes:**
+- Default paths are only available for Directory and File arguments
+- When a value is explicitly passed, it overrides the default path
+- For security reasons, you cannot access files outside the context directory
+
+## Next Steps
+
+- Explore each [typed object](/functions/typed-objects) to understand their specific capabilities
+- Learn how to package and share custom functions using [Reusable Modules](/modules/overview)

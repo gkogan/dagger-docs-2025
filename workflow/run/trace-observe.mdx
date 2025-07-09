@@ -1,0 +1,468 @@
+---
+title: "Trace & Observe"
+description: "Monitor, trace, and observe your Dagger workflows for debugging and performance optimization"
+---
+
+Understanding how your Dagger workflows execute is crucial for debugging issues, optimizing performance, and ensuring reliability. Dagger provides comprehensive tracing and observability capabilities to help you monitor your workflows in real-time and analyze their execution patterns.
+
+## Execution Traces
+
+Every Dagger workflow execution generates detailed traces that show the execution graph, timing information, and dependencies between operations.
+
+### Understanding Execution Graphs
+
+Dagger automatically constructs a directed acyclic graph (DAG) of your workflow operations:
+
+```python
+# This workflow creates a dependency graph
+def build_and_test_workflow(self, source: dagger.Directory) -> str:
+    # Step 1: Build environment (parallel to test prep)
+    build_env = (
+        dagger.container()
+        .from_("node:18")
+        .with_directory("/app", source)
+        .with_exec(["npm", "install"])
+    )
+    
+    # Step 2: Run tests (depends on build_env)
+    test_result = (
+        build_env
+        .with_exec(["npm", "run", "test"])
+        .stdout()
+    )
+    
+    # Step 3: Build app (depends on build_env, parallel to tests)
+    built_app = (
+        build_env
+        .with_exec(["npm", "run", "build"])
+        .directory("/app/dist")
+    )
+    
+    # Step 4: Package (depends on both test_result and built_app)
+    return (
+        dagger.container()
+        .from_("nginx:alpine")
+        .with_directory("/usr/share/nginx/html", built_app)
+        .publish("registry.com/my-app")
+    )
+```
+
+### Viewing Execution Traces
+
+**Local Execution:**
+```bash
+# Run with verbose output to see execution details
+dagger call build --source=. -v
+
+# Show execution plan without running
+dagger call build --source=. --dry-run
+```
+
+**JSON Trace Output:**
+```bash
+# Export execution trace as JSON
+dagger call build --source=. --trace-output=trace.json
+
+# View trace structure
+cat trace.json | jq '.spans[] | {name: .name, duration: .duration}'
+```
+
+## Dagger Cloud Observability
+
+Dagger Cloud provides a comprehensive web interface for visualizing and analyzing workflow executions.
+
+### Setting Up Dagger Cloud
+
+```bash
+# Authenticate with Dagger Cloud
+dagger login
+
+# Your workflows will automatically appear in the dashboard
+dagger call build --source=.
+```
+
+### Cloud Dashboard Features
+
+**Execution Timeline:**
+- Visual representation of operation dependencies
+- Real-time execution progress
+- Parallel operation identification
+- Critical path analysis
+
+**Performance Metrics:**
+- Operation duration and timing
+- Cache hit/miss ratios
+- Resource utilization
+- Throughput analysis
+
+**Debugging Information:**
+- Detailed logs for each operation
+- Error stack traces and context
+- Input/output inspection
+- Container environment details
+
+### Sharing and Collaboration
+
+```python
+def collaborative_workflow(self, source: dagger.Directory) -> str:
+    """Workflow with enhanced observability for team collaboration"""
+    
+    # Add descriptive names for better tracing
+    with dagger.trace("Setup Build Environment"):
+        build_env = (
+            dagger.container()
+            .from_("node:18")
+            .with_directory("/app", source)
+            .with_exec(["npm", "install"])
+        )
+    
+    with dagger.trace("Run Tests"):
+        test_results = (
+            build_env
+            .with_exec(["npm", "run", "test", "--", "--reporter=json"])
+            .stdout()
+        )
+    
+    with dagger.trace("Build Application"):
+        built_app = (
+            build_env
+            .with_exec(["npm", "run", "build"])
+            .directory("/app/dist")
+        )
+    
+    return built_app.export("./dist")
+```
+
+## Local Observability Tools
+
+### Built-in Logging
+
+**Verbose Output:**
+```bash
+# Show detailed execution information
+dagger call build --source=. --verbose
+
+# Show only warnings and errors
+dagger call build --source=. --log-level=warn
+```
+
+**Structured Logging:**
+```python
+def instrumented_workflow(self, source: dagger.Directory) -> dagger.Container:
+    """Workflow with custom logging for observability"""
+    
+    # Log workflow start
+    print("Starting build workflow...")
+    
+    container = (
+        dagger.container()
+        .from_("python:3.11")
+        .with_directory("/app", source)
+    )
+    
+    # Log each major step
+    print("Installing dependencies...")
+    container = container.with_exec(["pip", "install", "-r", "requirements.txt"])
+    
+    print("Running tests...")
+    test_output = container.with_exec(["python", "-m", "pytest"]).stdout()
+    
+    print(f"Test results: {test_output}")
+    
+    print("Building application...")
+    return container.with_exec(["python", "setup.py", "build"])
+```
+
+### Performance Monitoring
+
+**Execution Timing:**
+```python
+import time
+from contextlib import contextmanager
+
+@contextmanager
+def timed_operation(name: str):
+    """Context manager for timing operations"""
+    start = time.time()
+    print(f"Starting {name}...")
+    try:
+        yield
+    finally:
+        duration = time.time() - start
+        print(f"{name} completed in {duration:.2f}s")
+
+def performance_monitored_workflow(self, source: dagger.Directory) -> str:
+    """Workflow with performance monitoring"""
+    
+    with timed_operation("Dependency Installation"):
+        container = (
+            dagger.container()
+            .from_("node:18")
+            .with_directory("/app", source)
+            .with_exec(["npm", "install"])
+        )
+    
+    with timed_operation("Test Execution"):
+        test_result = container.with_exec(["npm", "test"]).stdout()
+    
+    with timed_operation("Build Process"):
+        built_app = container.with_exec(["npm", "run", "build"]).directory("/app/dist")
+    
+    return built_app.export("./dist")
+```
+
+## Debugging Workflow Execution
+
+### Interactive Debugging
+
+**Terminal Access:**
+```bash
+# Drop into interactive terminal for debugging
+dagger call build-env --source=. | terminal --cmd=bash
+
+# Debug specific container state
+dagger call build --source=. | terminal --cmd=sh
+```
+
+**Inspect Intermediate Results:**
+```python
+def debuggable_workflow(self, source: dagger.Directory) -> dagger.Container:
+    """Workflow with debugging capabilities"""
+    
+    # Build with debugging enabled
+    container = (
+        dagger.container()
+        .from_("python:3.11")
+        .with_directory("/app", source)
+        .with_exec(["pip", "install", "-r", "requirements.txt"])
+    )
+    
+    # Export intermediate state for inspection
+    container.directory("/app").export("./debug-checkpoint")
+    
+    # Continue with build
+    return container.with_exec(["python", "setup.py", "build"])
+```
+
+### Error Handling and Reporting
+
+**Comprehensive Error Context:**
+```python
+def robust_workflow_with_tracing(self, source: dagger.Directory) -> str:
+    """Workflow with comprehensive error handling and tracing"""
+    
+    try:
+        # Step 1: Environment setup
+        print("Setting up build environment...")
+        container = (
+            dagger.container()
+            .from_("python:3.11")
+            .with_directory("/app", source)
+        )
+        
+        # Step 2: Install dependencies with error context
+        print("Installing dependencies...")
+        container = container.with_exec([
+            "pip", "install", "-r", "requirements.txt", "--verbose"
+        ])
+        
+        # Step 3: Run tests with detailed output
+        print("Running tests...")
+        test_output = container.with_exec([
+            "python", "-m", "pytest", "-v", "--tb=short"
+        ]).stdout()
+        
+        print(f"Test results:\n{test_output}")
+        
+        # Step 4: Build application
+        print("Building application...")
+        return container.with_exec(["python", "setup.py", "build"]).stdout()
+        
+    except Exception as e:
+        print(f"Workflow failed at step: {e}")
+        print("Environment details:")
+        print(f"- Source directory: {source.entries()}")
+        print(f"- Container state: {container.export('.')}")
+        raise
+```
+
+## Performance Analysis
+
+### Cache Analysis
+
+**Understanding Cache Behavior:**
+```python
+def cache_optimized_workflow(self, source: dagger.Directory) -> dagger.Container:
+    """Workflow optimized for cache performance"""
+    
+    # Use cache volumes for better performance
+    npm_cache = dagger.cache_volume("npm-cache")
+    pip_cache = dagger.cache_volume("pip-cache")
+    
+    container = (
+        dagger.container()
+        .from_("python:3.11")
+        .with_mounted_cache("/root/.cache/pip", pip_cache)
+        .with_directory("/app", source)
+        .with_exec(["pip", "install", "-r", "requirements.txt"])
+    )
+    
+    # Monitor cache effectiveness
+    print("Cache volumes:")
+    print(f"- npm-cache: {npm_cache}")
+    print(f"- pip-cache: {pip_cache}")
+    
+    return container
+```
+
+### Resource Utilization
+
+**Monitoring Resource Usage:**
+```bash
+# Monitor system resources during execution
+dagger call build --source=. &
+DAGGER_PID=$!
+
+# Monitor resources in parallel
+while kill -0 $DAGGER_PID 2>/dev/null; do
+    echo "=== Resource Usage ==="
+    docker stats --no-stream
+    echo "=== Disk Usage ==="
+    df -h
+    sleep 5
+done
+```
+
+## Integration with External Tools
+
+### Metrics Export
+
+**Prometheus Integration:**
+```python
+def metrics_enabled_workflow(self, source: dagger.Directory) -> str:
+    """Workflow with metrics export for monitoring"""
+    
+    import time
+    from prometheus_client import Counter, Histogram
+    
+    # Define metrics
+    workflow_counter = Counter('dagger_workflow_total', 'Total workflow executions')
+    workflow_duration = Histogram('dagger_workflow_duration_seconds', 'Workflow duration')
+    
+    start_time = time.time()
+    workflow_counter.inc()
+    
+    try:
+        result = (
+            dagger.container()
+            .from_("python:3.11")
+            .with_directory("/app", source)
+            .with_exec(["python", "setup.py", "build"])
+            .stdout()
+        )
+        
+        # Record successful completion
+        workflow_duration.observe(time.time() - start_time)
+        return result
+        
+    except Exception as e:
+        # Record failure metrics
+        workflow_duration.observe(time.time() - start_time)
+        raise
+```
+
+### Log Aggregation
+
+**Structured Logging for Analysis:**
+```python
+import json
+import logging
+
+def structured_logging_workflow(self, source: dagger.Directory) -> str:
+    """Workflow with structured logging for analysis"""
+    
+    # Configure structured logging
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
+    logger = logging.getLogger(__name__)
+    
+    # Log workflow start
+    logger.info(json.dumps({
+        "event": "workflow_start",
+        "workflow": "build",
+        "source_files": source.entries()
+    }))
+    
+    try:
+        container = (
+            dagger.container()
+            .from_("python:3.11")
+            .with_directory("/app", source)
+            .with_exec(["pip", "install", "-r", "requirements.txt"])
+        )
+        
+        logger.info(json.dumps({
+            "event": "dependencies_installed",
+            "container_id": str(container)
+        }))
+        
+        result = container.with_exec(["python", "setup.py", "build"]).stdout()
+        
+        logger.info(json.dumps({
+            "event": "workflow_complete",
+            "result_length": len(result)
+        }))
+        
+        return result
+        
+    except Exception as e:
+        logger.error(json.dumps({
+            "event": "workflow_failed",
+            "error": str(e),
+            "error_type": type(e).__name__
+        }))
+        raise
+```
+
+## Best Practices
+
+### Observability Design
+
+**Plan for Observability:**
+- Add meaningful operation names and descriptions
+- Include relevant context in logs and traces
+- Design workflows with debugging in mind
+- Use consistent naming conventions
+
+**Performance Considerations:**
+- Monitor cache hit rates and optimize accordingly
+- Identify and parallelize independent operations
+- Use appropriate logging levels to avoid performance impact
+- Consider trace overhead in production environments
+
+### Troubleshooting Guide
+
+**Common Issues and Solutions:**
+
+1. **Slow Execution:**
+   - Check cache utilization
+   - Identify sequential operations that could be parallelized
+   - Monitor resource constraints
+
+2. **Intermittent Failures:**
+   - Add retry logic with exponential backoff
+   - Implement comprehensive error logging
+   - Monitor external dependencies
+
+3. **Resource Exhaustion:**
+   - Use cache volumes appropriately
+   - Clean up intermediate containers
+   - Monitor disk and memory usage
+
+## Next Steps
+
+- Learn about [optimizing CI](/workflow/run/optimize-ci) performance
+- Explore [debugging workflows](/workflow/manage/debug-workflows) techniques
+- See [performance tuning](/workflow/manage/tune-performance) strategies
