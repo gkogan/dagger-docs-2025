@@ -42,6 +42,7 @@ When determining how to resolve a default path, Dagger first identifies a "conte
 - For Git repositories (defined by the presence of a `.git` sub-directory), the context directory is the repository root (for absolute paths), or the directory containing a `dagger.json` file (for relative paths).
 - For all other cases, the context directory is the directory containing a `dagger.json` file.
 
+<Card title="Context directory resolution">
 ```mermaid
 flowchart TD
     B[Git repository?] -->|Yes| C[Absolute path?]
@@ -49,6 +50,7 @@ flowchart TD
     C -->|No| E[Context directory = Directory containing dagger.json]
     B -->|No| F[Context directory = Directory containing dagger.json]
 ```
+</Card>
 
 <Important>
 For security reasons, it is not possible to retrieve files or directories outside the context directory.

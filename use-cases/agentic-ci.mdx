@@ -86,11 +86,13 @@ Dagger has built-in MCP support that allows you to easily expose Dagger modules 
 Currently, only Dagger modules with no required constructor arguments are supported when exposing an MCP server outside  Dagger.
 </Warning>
 
+<Card title="Expose Dagger modules as MCP servers">
 ```mermaid
 flowchart TD
     A["MCP Client<br>e.g. Claude Desktop / Cursor / Goose"] -- "dagger -m &lt;module&gt; mcp (stdio)" --> C["Dagger MCP Server: tools"]
     C --> E["Dagger module: functions"]
 ```
+</Card>
 
 ### Connect to external MCP servers from Dagger
 

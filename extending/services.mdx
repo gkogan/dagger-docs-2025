@@ -13,6 +13,7 @@ Using Services in Dagger modules makes it possible to:
   - Use those services from the calling host (container-to-host networking)
 - **Expose host services** for use in a Dagger Function (host-to-container networking).
 
+<Card title="Service Function Diagram">
 ```mermaid
 graph TD
   A[Dagger Function] -->|Returns| B[Service Container]
@@ -20,6 +21,8 @@ graph TD
   B -->|Accessible from| D[Calling Host]
   E[Host Service] -->|Exposed to| F[Dagger Function]
 ```
+</Card>
+
 ## Common scenarios
 
 Some common scenarios for using services with Dagger Functions are:
