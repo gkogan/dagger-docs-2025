@@ -1,0 +1,228 @@
+---
+title: "Jenkins"
+description: "Replace Groovy-based Jenkins pipelines with programmable Dagger Functions"
+---
+
+Dagger allows replacing Groovy-based Jenkins pipelines with Dagger Functions written in regular programming languages, enabling consistent pipeline execution locally and in Jenkins while maintaining existing Jenkins infrastructure.
+
+## How It Works
+
+1. Jenkins receives job trigger
+2. Jenkins loads `Jenkinsfile`
+3. Jenkins parses Jenkinsfile and downloads Dagger CLI
+4. Jenkins executes Dagger CLI commands
+5. Dagger CLI finds or creates a Dagger Engine
+6. Dagger Function is called
+7. Job completes with standard logging
+
+## Prerequisites
+
+- Jenkins agent with `dagger` label
+- Docker engine capable of running containers
+- Docker client installed on Jenkins agent
+
+## Example Jenkinsfile
+
+### Basic Pipeline
+
+```groovy
+pipeline {
+  agent { label 'dagger' }
+  environment {
+    DAGGER_VERSION = "0.18.12"
+    PATH = "/tmp/dagger/bin:$PATH"
+    DAGGER_CLOUD_TOKEN = credentials('DAGGER_CLOUD_TOKEN')
+  }
+  stages {
+    stage("dagger") {
+      steps {
+        sh '''
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/tmp/dagger/bin DAGGER_VERSION=$DAGGER_VERSION sh
+          dagger call -m github.com/shykes/hello hello --greeting "bonjour" --name "from jenkins"
+        '''
+      }
+    }
+  }
+}
+```
+
+### Multi-Stage Pipeline
+
+```groovy
+pipeline {
+  agent { label 'dagger' }
+  environment {
+    DAGGER_VERSION = "0.18.12"
+    PATH = "/tmp/dagger/bin:$PATH"
+    DAGGER_CLOUD_TOKEN = credentials('DAGGER_CLOUD_TOKEN')
+  }
+  stages {
+    stage("Setup") {
+      steps {
+        sh '''
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/tmp/dagger/bin DAGGER_VERSION=$DAGGER_VERSION sh
+        '''
+      }
+    }
+    stage("Test") {
+      steps {
+        sh '''
+          dagger call test --source=.
+        '''
+      }
+    }
+    stage("Build") {
+      steps {
+        sh '''
+          dagger call build --source=.
+        '''
+      }
+    }
+    stage("Deploy") {
+      when {
+        branch 'main'
+      }
+      steps {
+        sh '''
+          dagger call deploy --environment=production --source=.
+        '''
+      }
+    }
+  }
+  post {
+    always {
+      sh 'docker system prune -f'
+    }
+  }
+}
+```
+
+### Parallel Execution
+
+```groovy
+pipeline {
+  agent { label 'dagger' }
+  environment {
+    DAGGER_VERSION = "0.18.12"
+    PATH = "/tmp/dagger/bin:$PATH"
+    DAGGER_CLOUD_TOKEN = credentials('DAGGER_CLOUD_TOKEN')
+  }
+  stages {
+    stage("Setup") {
+      steps {
+        sh '''
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/tmp/dagger/bin DAGGER_VERSION=$DAGGER_VERSION sh
+        '''
+      }
+    }
+    stage("Parallel Tests") {
+      parallel {
+        stage("Unit Tests") {
+          steps {
+            sh 'dagger call test-unit --source=.'
+          }
+        }
+        stage("Integration Tests") {
+          steps {
+            sh 'dagger call test-integration --source=.'
+          }
+        }
+        stage("Lint") {
+          steps {
+            sh 'dagger call lint --source=.'
+          }
+        }
+      }
+    }
+    stage("Build") {
+      steps {
+        sh 'dagger call build --source=.'
+      }
+    }
+  }
+}
+```
+
+## Configuration
+
+### Environment Variables
+
+- `DAGGER_VERSION`: Specify Dagger CLI version
+- `DAGGER_CLOUD_TOKEN`: Token for Dagger Cloud observability
+- `PATH`: Include Dagger CLI in PATH
+
+### Jenkins Agent Requirements
+
+- Label: `dagger` (or custom label)
+- Docker engine installed and running
+- Sufficient disk space for container operations
+- Network access for downloading Dagger CLI
+
+### Jenkins Credentials
+
+Store sensitive information in Jenkins credentials:
+
+```groovy
+environment {
+  DAGGER_CLOUD_TOKEN = credentials('DAGGER_CLOUD_TOKEN')
+  DOCKER_REGISTRY_TOKEN = credentials('DOCKER_REGISTRY_TOKEN')
+}
+```
+
+## Best Practices
+
+### Resource Management
+
+```groovy
+post {
+  always {
+    // Clean up Docker resources
+    sh 'docker system prune -f'
+    // Archive logs if needed
+    archiveArtifacts artifacts: 'logs/**', allowEmptyArchive: true
+  }
+}
+```
+
+### Error Handling
+
+```groovy
+stage("Build") {
+  steps {
+    script {
+      try {
+        sh 'dagger call build --source=.'
+      } catch (Exception e) {
+        currentBuild.result = 'FAILURE'
+        error("Build failed: ${e.getMessage()}")
+      }
+    }
+  }
+}
+```
+
+### Conditional Deployment
+
+```groovy
+stage("Deploy") {
+  when {
+    allOf {
+      branch 'main'
+      not { changeRequest() }
+    }
+  }
+  steps {
+    sh 'dagger call deploy --environment=production --source=.'
+  }
+}
+```
+
+## Additional Resources
+
+- [Jenkins Integration Video Tutorial](https://youtu.be/vuEBx_s1sgs)
+- [Dagger Discord Community](https://discord.gg/dagger-io) - Jenkins channel available
+- [Jenkins Pipeline Documentation](https://www.jenkins.io/doc/book/pipeline/)
+
+## About Jenkins
+
+Jenkins is an open-source automation server for build, test, and deployment processes, supporting numerous integration plugins and providing extensive customization capabilities.

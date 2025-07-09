@@ -50,7 +50,19 @@
             "pages": [
               "docs/run-dagger-shell",
               "docs/run-from-code",
-              "docs/run-in-ci",
+              {
+                "group": "Run in CI",
+                "pages": [
+                  "docs/ci/github-actions",
+                  "docs/ci/gitlab-ci",
+                  "docs/ci/azure-pipelines",
+                  "docs/ci/circleci",
+                  "docs/ci/jenkins",
+                  "docs/ci/aws-codebuild",
+                  "docs/ci/argo-workflows",
+                  "docs/ci/tekton"
+                ]
+              },
               "docs/debug-iterate"
             ]
           },

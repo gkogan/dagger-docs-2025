@@ -1,0 +1,412 @@
+---
+title: "Argo Workflows"
+description: "Run Dagger pipelines within Argo Workflows with caching, debugging, and visualization features"
+---
+
+Dagger provides a programmable container engine that can be invoked from an Argo Workflow to run a Dagger pipeline, enabling caching, debugging, and visualization features while maintaining existing Argo Workflows infrastructure.
+
+## How it Works
+
+- Dagger is executed as a step in an Argo Workflow
+- Dagger CLI runs in a container
+- Dagger Engine runs in a sidecar container
+- Communication occurs through a shared Unix socket
+
+## Prerequisites
+
+- Kubernetes cluster configured for Dagger
+- Pre-configured `kubectl` profile
+- Argo Workflows installed in the cluster
+
+## Example Implementation
+
+### Basic Workflow
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dagger-in-argo-
+spec:
+  entrypoint: dagger-workflow
+  volumes:
+    - name: dagger-socket
+      emptyDir: {}
+    - name: dagger-storage
+      emptyDir: {}
+  templates:
+    - name: dagger-workflow
+      sidecars:
+        - name: dagger-engine
+          image: registry.dagger.io/engine:v0.18.12
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - ALL
+          volumeMounts:
+            - name: dagger-socket
+              mountPath: /run/dagger
+            - name: dagger-storage
+              mountPath: /var/lib/dagger
+          readinessProbe:
+            exec:
+              command: ["buildctl", "debug", "workers"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          env:
+            - name: _EXPERIMENTAL_DAGGER_SERVICES_DNS
+              value: auto
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args:
+          - |
+            apk add curl
+            curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+            export _EXPERIMENTAL_DAGGER_RUNNER_HOST=unix:///run/dagger/engine.sock
+            dagger -m github.com/shykes/daggerverse/hello@v0.1.2 call hello --greeting="bonjour" --name="monde"
+        volumeMounts:
+          - name: dagger-socket
+            mountPath: /run/dagger
+        env:
+          - name: DAGGER_CLOUD_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: dagger-cloud
+                key: token
+```
+
+### Workflow with Git Repository
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dagger-git-workflow-
+spec:
+  entrypoint: dagger-pipeline
+  arguments:
+    parameters:
+      - name: repo-url
+        value: "https://github.com/example/repo.git"
+      - name: revision
+        value: "main"
+  volumes:
+    - name: dagger-socket
+      emptyDir: {}
+    - name: dagger-storage
+      emptyDir: {}
+  templates:
+    - name: dagger-pipeline
+      inputs:
+        artifacts:
+          - name: source-code
+            path: /workspace
+            git:
+              repo: "{{workflow.parameters.repo-url}}"
+              revision: "{{workflow.parameters.revision}}"
+      sidecars:
+        - name: dagger-engine
+          image: registry.dagger.io/engine:v0.18.12
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - ALL
+          volumeMounts:
+            - name: dagger-socket
+              mountPath: /run/dagger
+            - name: dagger-storage
+              mountPath: /var/lib/dagger
+          readinessProbe:
+            exec:
+              command: ["buildctl", "debug", "workers"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      container:
+        image: alpine:latest
+        workingDir: /workspace
+        command: [sh, -c]
+        args:
+          - |
+            apk add curl
+            curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+            export _EXPERIMENTAL_DAGGER_RUNNER_HOST=unix:///run/dagger/engine.sock
+            dagger call test --source=.
+            dagger call build --source=.
+        volumeMounts:
+          - name: dagger-socket
+            mountPath: /run/dagger
+        env:
+          - name: DAGGER_CLOUD_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: dagger-cloud
+                key: token
+```
+
+### Multi-Step Workflow
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dagger-multi-step-
+spec:
+  entrypoint: multi-step-pipeline
+  volumes:
+    - name: dagger-socket
+      emptyDir: {}
+    - name: dagger-storage
+      emptyDir: {}
+  templates:
+    - name: multi-step-pipeline
+      steps:
+        - - name: test
+            template: dagger-step
+            arguments:
+              parameters:
+                - name: command
+                  value: "test --source=."
+        - - name: build
+            template: dagger-step
+            arguments:
+              parameters:
+                - name: command
+                  value: "build --source=."
+        - - name: deploy
+            template: dagger-step
+            arguments:
+              parameters:
+                - name: command
+                  value: "deploy --source=. --environment=staging"
+
+    - name: dagger-step
+      inputs:
+        parameters:
+          - name: command
+        artifacts:
+          - name: source-code
+            path: /workspace
+            git:
+              repo: "https://github.com/example/repo.git"
+              revision: "main"
+      sidecars:
+        - name: dagger-engine
+          image: registry.dagger.io/engine:v0.18.12
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - ALL
+          volumeMounts:
+            - name: dagger-socket
+              mountPath: /run/dagger
+            - name: dagger-storage
+              mountPath: /var/lib/dagger
+          readinessProbe:
+            exec:
+              command: ["buildctl", "debug", "workers"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      container:
+        image: alpine:latest
+        workingDir: /workspace
+        command: [sh, -c]
+        args:
+          - |
+            apk add curl
+            curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+            export _EXPERIMENTAL_DAGGER_RUNNER_HOST=unix:///run/dagger/engine.sock
+            dagger call {{inputs.parameters.command}}
+        volumeMounts:
+          - name: dagger-socket
+            mountPath: /run/dagger
+        env:
+          - name: DAGGER_CLOUD_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: dagger-cloud
+                key: token
+```
+
+## Configuration
+
+### Kubernetes Resources
+
+#### Create Dagger Cloud Secret
+
+```bash
+kubectl create secret generic dagger-cloud \
+  --from-literal=token="your-dagger-cloud-token" \
+  -n argo
+```
+
+#### Service Account with Permissions
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dagger-argo
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dagger-argo
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["get", "list", "create", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dagger-argo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dagger-argo
+subjects:
+  - kind: ServiceAccount
+    name: dagger-argo
+    namespace: argo
+```
+
+### Environment Variables
+
+- `DAGGER_CLOUD_TOKEN`: Token for Dagger Cloud observability
+- `_EXPERIMENTAL_DAGGER_RUNNER_HOST`: Socket path for Dagger Engine communication
+- `_EXPERIMENTAL_DAGGER_SERVICES_DNS`: Enable service discovery
+
+## Execution
+
+### Submit Workflow
+
+```bash
+# Submit and watch workflow
+argo submit -n argo --watch ./workflow.yaml
+
+# Submit with parameters
+argo submit -n argo --watch ./workflow.yaml \
+  -p repo-url="https://github.com/example/repo.git" \
+  -p revision="develop"
+
+# List workflows
+argo list -n argo
+
+# Get workflow logs
+argo logs -n argo workflow-name
+```
+
+### Workflow Templates
+
+Create reusable workflow templates:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dagger-template
+  namespace: argo
+spec:
+  templates:
+    - name: dagger-build
+      inputs:
+        parameters:
+          - name: git-repo
+          - name: git-revision
+            value: "main"
+        artifacts:
+          - name: source
+            path: /workspace
+            git:
+              repo: "{{inputs.parameters.git-repo}}"
+              revision: "{{inputs.parameters.git-revision}}"
+      # ... rest of template configuration
+```
+
+## Best Practices
+
+### Resource Management
+
+- Set appropriate resource limits for containers
+- Use node selectors for dedicated Dagger nodes
+- Implement proper cleanup policies
+- Monitor resource usage
+
+### Security
+
+- Use Kubernetes secrets for sensitive data
+- Implement proper RBAC policies
+- Run with least privilege when possible
+- Regularly update Dagger Engine images
+
+### Performance
+
+- Use persistent volumes for Dagger cache
+- Implement workflow parallelization where possible
+- Optimize container images
+- Use workflow templates for reusability
+
+### Monitoring
+
+- Enable Dagger Cloud for workflow observability
+- Use Argo Workflows UI for pipeline monitoring
+- Set up alerts for workflow failures
+- Monitor cluster resource usage
+
+## Integration with Other Tools
+
+### Argo Events
+
+Trigger workflows automatically:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: github-webhook
+spec:
+  github:
+    example:
+      repositories:
+        - owner: example
+          names:
+            - repo
+      webhook:
+        endpoint: /push
+        port: "12000"
+        method: POST
+      events:
+        - push
+```
+
+### Argo CD Integration
+
+Use Argo Workflows for CI with Argo CD for deployment:
+
+```yaml
+# In Argo CD Application
+spec:
+  source:
+    helm:
+      parameters:
+        - name: image.tag
+          value: "{{workflow.outputs.parameters.image-tag}}"
+```
+
+## Additional Resources
+
+- [Video: Argo Workflows with Dagger](https://www.youtube.com/watch?v=FWOJO2PAQIo)
+- [Argo Workflows Documentation](https://argoproj.github.io/argo-workflows/)
+- [Dagger Discord Community](https://discord.gg/dagger-io)
+
+## About Argo Workflows
+
+Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. It is designed to be highly scalable and supports complex workflow patterns including DAGs, loops, and conditional execution.

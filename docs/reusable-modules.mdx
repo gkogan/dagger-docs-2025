@@ -5,7 +5,7 @@ description: "Packages for creating, sharing, and reusing Dagger Functions acros
 
 import InitProject from '/snippets/init-project.mdx';
 
-Modules are packages for creating, sharing, and reusing Dagger Functions across different programming languages. When a module is loaded, the Dagger API is dynamically extended with new functions, allowing you to call both core functions and custom functions from that module.
+Modules are packages for creating, sharing, and reusing Dagger Functions across different programming languages. When a module is loaded, the Dagger API is dynamically extended with new functions, allowing you to call both core functions and custom Dagger Functions from that module.
 
 ## Why Use Modules?
 
@@ -25,7 +25,7 @@ Each module has a consistent structure across programming languages:
 
 ## Creating Modules
 
-Creating a Dagger module allows you to package custom automation logic into reusable functions that can be shared and used across different projects.
+Creating a Dagger module allows you to package custom automation logic into reusable Dagger Functions that can be shared and used across different projects.
 
 ### Initialize a Dagger Module
 
@@ -217,7 +217,7 @@ dagger install git@github.com:user/private-repo
 
 Dagger Functions execute within containers spawned by the Dagger Engine. This "sandboxing" serves important purposes:
 
-1. **Reproducibility**: Executing in a well-defined container ensures functions run the same way every time
+1. **Reproducibility**: Executing in a well-defined container ensures Dagger Functions run the same way every time
 2. **Caching**: A reproducible environment enables automatic caching of function results
 3. **Security**: Functions don't have default access to your host environment - access must be explicitly granted
 

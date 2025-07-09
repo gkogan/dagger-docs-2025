@@ -532,7 +532,7 @@ If you signed up for Dagger Cloud, the output of the previous command would have
 
 
 ## Interact with the build environment
-The `build-env` Dagger Function returns a `Container` type representing the application's build environment. One of the most interesting built-in functions of this type is `terminal`, which can be used to [open an interactive terminal session with the running container](../../features/debugging.mdx).
+The `build-env` Dagger Function returns a `Container` type representing the application's build environment. One of the most interesting built-in Dagger Functions of this type is `terminal`, which can be used to [open an interactive terminal session with the running container](../../features/debugging.mdx).
 
 To try this, chain an additional function call to `terminal` on the returned `Container`:
 
@@ -582,7 +582,7 @@ This feature immediately unlocks cross-team collaboration: even though different
 
 #### Example
 
-Here's an example, where a Dagger Function written in Python calls both core functions and third-party Dagger Functions written in Go:
+Here's an example, where a Dagger Function written in Python calls both core Dagger Functions and third-party Dagger Functions written in Go:
 
 ```python
 @function

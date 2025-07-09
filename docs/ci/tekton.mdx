@@ -1,0 +1,501 @@
+---
+title: "Tekton"
+description: "Integrate Dagger pipelines with Tekton for enhanced caching, debugging, and visualization"
+---
+
+Dagger provides a programmable container engine that can be integrated with Tekton to run Dagger pipelines. This integration allows users to leverage Dagger's caching, debugging, and visualization features while maintaining existing Tekton infrastructure.
+
+## How It Works
+
+- Tekton allows running Dagger pipelines as a Tekton Task
+- Uses standard Tekton architecture
+- Adds a Dagger Engine sidecar for each Tekton PipelineRun
+- Can be triggered via Tekton CLI or configured event triggers
+
+## Prerequisites
+
+- Kubernetes cluster configured for Dagger
+- Tekton and Tekton CLI installed in the cluster
+- Access to container registry for custom task images
+
+## Example Implementation
+
+### Install Git Clone Task
+
+```bash
+tkn hub install task git-clone
+```
+
+### Basic Dagger Task
+
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: dagger
+spec:
+  workspaces:
+    - name: source
+      description: Source code workspace
+  params:
+    - name: dagger-cloud-token
+      type: string
+      description: Dagger Cloud token for observability
+      default: ""
+    - name: dagger-command
+      type: string
+      description: Dagger command to execute
+      default: "call hello"
+  sidecars:
+    - name: dagger-engine
+      image: registry.dagger.io/engine:v0.18.12
+      securityContext:
+        privileged: true
+        capabilities:
+          add:
+            - ALL
+      volumeMounts:
+        - name: dagger-socket
+          mountPath: /run/dagger
+        - name: dagger-storage
+          mountPath: /var/lib/dagger
+      readinessProbe:
+        exec:
+          command: ["buildctl", "debug", "workers"]
+        initialDelaySeconds: 5
+        periodSeconds: 10
+  volumes:
+    - name: dagger-socket
+      emptyDir: {}
+    - name: dagger-storage
+      emptyDir: {}
+  steps:
+    - name: run-dagger
+      image: alpine:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        apk add curl
+        curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh
+        export _EXPERIMENTAL_DAGGER_RUNNER_HOST=unix:///run/dagger/engine.sock
+        dagger $(params.dagger-command)
+      volumeMounts:
+        - name: dagger-socket
+          mountPath: /run/dagger
+      env:
+        - name: DAGGER_CLOUD_TOKEN
+          value: $(params.dagger-cloud-token)
+```
+
+### Complete Pipeline
+
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: dagger-pipeline
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL
+    - name: revision
+      type: string
+      description: Git revision
+      default: "main"
+    - name: dagger-cloud-token
+      type: string
+      description: Dagger Cloud token
+      default: ""
+  workspaces:
+    - name: shared-data
+      description: Shared workspace for source code
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+    
+    - name: test
+      runAfter: ["fetch-source"]
+      taskRef:
+        name: dagger
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: dagger-cloud-token
+          value: $(params.dagger-cloud-token)
+        - name: dagger-command
+          value: "call test --source=."
+    
+    - name: build
+      runAfter: ["test"]
+      taskRef:
+        name: dagger
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: dagger-cloud-token
+          value: $(params.dagger-cloud-token)
+        - name: dagger-command
+          value: "call build --source=."
+    
+    - name: deploy
+      runAfter: ["build"]
+      taskRef:
+        name: dagger
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: dagger-cloud-token
+          value: $(params.dagger-cloud-token)
+        - name: dagger-command
+          value: "call deploy --source=. --environment=staging"
+```
+
+### Advanced Pipeline with Parallel Tasks
+
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: dagger-parallel-pipeline
+spec:
+  params:
+    - name: repo-url
+      type: string
+    - name: revision
+      type: string
+      default: "main"
+    - name: dagger-cloud-token
+      type: string
+      default: ""
+  workspaces:
+    - name: shared-data
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+    
+    # Parallel test tasks
+    - name: unit-tests
+      runAfter: ["fetch-source"]
+      taskRef:
+        name: dagger
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: dagger-cloud-token
+          value: $(params.dagger-cloud-token)
+        - name: dagger-command
+          value: "call test-unit --source=."
+    
+    - name: integration-tests
+      runAfter: ["fetch-source"]
+      taskRef:
+        name: dagger
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: dagger-cloud-token
+          value: $(params.dagger-cloud-token)
+        - name: dagger-command
+          value: "call test-integration --source=."
+    
+    - name: lint
+      runAfter: ["fetch-source"]
+      taskRef:
+        name: dagger
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: dagger-cloud-token
+          value: $(params.dagger-cloud-token)
+        - name: dagger-command
+          value: "call lint --source=."
+    
+    # Build after all tests pass
+    - name: build
+      runAfter: ["unit-tests", "integration-tests", "lint"]
+      taskRef:
+        name: dagger
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: dagger-cloud-token
+          value: $(params.dagger-cloud-token)
+        - name: dagger-command
+          value: "call build --source=."
+```
+
+## Configuration
+
+### Create PipelineRun
+
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: dagger-pipeline-run-
+spec:
+  pipelineRef:
+    name: dagger-pipeline
+  params:
+    - name: repo-url
+      value: "https://github.com/example/repo.git"
+    - name: revision
+      value: "main"
+    - name: dagger-cloud-token
+      value: "your-dagger-cloud-token"
+  workspaces:
+    - name: shared-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+```
+
+### Kubernetes Resources
+
+#### Create Secret for Dagger Cloud Token
+
+```bash
+kubectl create secret generic dagger-cloud-token \
+  --from-literal=token="your-dagger-cloud-token" \
+  -n tekton-pipelines
+```
+
+#### Use Secret in Task
+
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: dagger-with-secret
+spec:
+  # ... other configuration
+  steps:
+    - name: run-dagger
+      image: alpine:latest
+      env:
+        - name: DAGGER_CLOUD_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: dagger-cloud-token
+              key: token
+      # ... rest of step configuration
+```
+
+### Service Account and RBAC
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dagger-tekton
+  namespace: tekton-pipelines
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dagger-tekton
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "secrets"]
+    verbs: ["get", "list", "create", "delete", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dagger-tekton
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dagger-tekton
+subjects:
+  - kind: ServiceAccount
+    name: dagger-tekton
+    namespace: tekton-pipelines
+```
+
+## Execution
+
+### Using Tekton CLI
+
+```bash
+# Install pipeline and tasks
+kubectl apply -f dagger-task.yaml
+kubectl apply -f dagger-pipeline.yaml
+
+# Run pipeline
+tkn pipeline start dagger-pipeline \
+  --param repo-url="https://github.com/example/repo.git" \
+  --param revision="main" \
+  --param dagger-cloud-token="your-token" \
+  --workspace name=shared-data,volumeClaimTemplateFile=workspace-template.yaml \
+  --showlog
+
+# List pipeline runs
+tkn pipelinerun list
+
+# Get logs
+tkn pipelinerun logs dagger-pipeline-run-xyz
+
+# Describe pipeline run
+tkn pipelinerun describe dagger-pipeline-run-xyz
+```
+
+### Triggering with Events
+
+#### EventListener Configuration
+
+```yaml
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: dagger-github-listener
+spec:
+  serviceAccountName: dagger-tekton
+  triggers:
+    - name: github-push
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["push"]
+      bindings:
+        - ref: dagger-trigger-binding
+      template:
+        ref: dagger-trigger-template
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: dagger-trigger-binding
+spec:
+  params:
+    - name: git-repo-url
+      value: $(body.repository.clone_url)
+    - name: git-revision
+      value: $(body.head_commit.id)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: dagger-trigger-template
+spec:
+  params:
+    - name: git-repo-url
+    - name: git-revision
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: dagger-pipeline-run-
+      spec:
+        pipelineRef:
+          name: dagger-pipeline
+        params:
+          - name: repo-url
+            value: $(tt.params.git-repo-url)
+          - name: revision
+            value: $(tt.params.git-revision)
+        workspaces:
+          - name: shared-data
+            volumeClaimTemplate:
+              spec:
+                accessModes: [ReadWriteOnce]
+                resources:
+                  requests:
+                    storage: 1Gi
+```
+
+## Best Practices
+
+### Performance Optimization
+
+- Use persistent volumes for Dagger cache
+- Implement proper resource limits
+- Use node affinity for consistent scheduling
+- Cache Dagger CLI installation
+
+### Security
+
+- Use Kubernetes secrets for sensitive data
+- Implement proper RBAC policies
+- Run with minimal required privileges
+- Regularly update base images
+
+### Monitoring and Observability
+
+- Enable Dagger Cloud for workflow observability
+- Use Tekton Dashboard for pipeline monitoring
+- Set up alerts for pipeline failures
+- Monitor resource usage and costs
+
+### Pipeline Design
+
+- Keep tasks focused and single-purpose
+- Use workspaces for data sharing
+- Implement proper error handling
+- Use parameters for configuration
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Sidecar not ready**: Check Dagger Engine readiness probe
+2. **Permission denied**: Verify RBAC configuration
+3. **Network issues**: Check cluster networking and policies
+4. **Resource constraints**: Monitor CPU and memory usage
+
+### Debug Mode
+
+Enable debug logging:
+
+```yaml
+env:
+  - name: DAGGER_LOG_LEVEL
+    value: debug
+  - name: _EXPERIMENTAL_DAGGER_DEBUG
+    value: "1"
+```
+
+## Additional Resources
+
+- [Tekton Documentation](https://tekton.dev/docs/)
+- [Tekton Hub](https://hub.tekton.dev/)
+- [Dagger Discord Community](https://discord.gg/dagger-io)
+
+## About Tekton
+
+Tekton is an open-source framework for creating CI/CD systems on Kubernetes. It provides building blocks for creating cloud-native CI/CD pipelines that are portable, scalable, and vendor-neutral.
