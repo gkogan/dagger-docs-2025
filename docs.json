@@ -87,6 +87,22 @@
         ]
       },
       {
+        "tab": "Extending Dagger",
+        "groups": [
+          {
+            "group": "Overview",
+            "icon": "plug",
+            "pages": [
+              "extending/overview",
+              "extending/arguments",
+              "extending/return-values",
+              "extending/default-paths",
+              "extending/custom-applications"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Reference",
         "icon": "code",
         "groups": [
