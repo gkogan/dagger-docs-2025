@@ -20,7 +20,9 @@ Some of its important fields are:
 
 ## Default paths
 
-It is possible to assign a default path for a `Directory` or `File` argument in a Dagger Function. Dagger will automatically use this default path when no value is specified for the argument. The `Directory` or `File` loaded in this manner is not merely a string, but the actual filesystem state of the directory or file.
+It is possible to assign a default path for a `Directory` or `File` argument in a Dagger Function. Dagger will automatically use this default path when no value is specified for the argument. 
+
+The `Directory` or `File` loaded in this manner is not merely a string, but the actual filesystem state of the directory or file.
 
 <Important>
   Default paths are only available for `Directory` and `File` arguments. They
@@ -31,50 +33,91 @@ It is possible to assign a default path for a `Directory` or `File` argument in 
 
 Here's an example:
 
-<Tabs groupId="language" queryString="sdk">
-<Tab value="go" title="Go">
+<CodeGroup>
 
-The default path is set by adding a `defaultPath` pragma on the corresponding Dagger Function `source` argument.
+```go Go  icon="golang" highlight={12} wrap
+package main
 
-```go file=./snippets/default-paths/go/main.go
+import (
+	"context"
+	"dagger/my-module/internal/dagger"
+)
 
+type MyModule struct{}
+
+func (m *MyModule) ReadDir(
+	ctx context.Context,
+	// +defaultPath="/"
+	source *dagger.Directory,
+) ([]string, error) {
+	return source.Entries(ctx)
+}
 ```
 
-</Tab>
-<Tab value="python" title="Python">
+```python Python icon="python" highlight={11} wrap
+from typing import Annotated
 
-The default path is set by adding a `DefaultPath` annotation on the corresponding Dagger Function `source` argument.
+import dagger
+from dagger import DefaultPath, function, object_type
 
-```python file=./snippets/default-paths/python/main.py
-
+@object_type
+class MyModule:
+    @function
+    async def read_dir(
+        self,
+        source: Annotated[dagger.Directory, DefaultPath("/")],
+    ) -> list[str]:
+        return await source.entries()
 ```
 
-</Tab>
-<Tab value="typescript" title="TypeScript">
+```typescript TypeScript icon="js" highlight={7} wrap
+import { Directory, File, argument, object, func } from "@dagger.io/dagger"
 
-The default path is set by adding an `@argument` decorator with a `defaultPath` parameter on the corresponding Dagger Function `source` argument.
-
-```typescript file=./snippets/default-paths/typescript/index.ts
-
+@object()
+class MyModule {
+  @func()
+  async readDir(
+    @argument({ defaultPath: "/" }) source: Directory,
+  ): Promise<string[]> {
+    return await source.entries()
+  }
+}
 ```
 
-</Tab>
-<Tab value="php" title="PHP">
+```php PHP icon="php" highlight={16} wrap
+<?php
 
-The default path is set by adding a `#[DefaultPath]` Attribute on the corresponding Dagger Function `source` argument.
+declare(strict_types=1);
 
-```php file=./snippets/default-paths/php/src/MyModule.php
+namespace DaggerModule;
 
+use Dagger\Attribute\{DaggerFunction, DaggerObject, DefaultPath, ReturnsListOfType};
+use Dagger\Directory;
+
+#[DaggerObject]
+class MyModule
+{
+    #[DaggerFunction]
+    #[ReturnsListOfType('string')]
+    public function readDir(
+        #[DefaultPath('.')]
+        Directory $source,
+    ): array {
+        return $source->entries();
+    }
+}
 ```
 
-</Tab>
-</Tabs>
+</CodeGroup>
+
+### Context directory
 
 When determining how to resolve a default path, Dagger first identifies a "context directory", and then resolves the path starting from the context directory.
 
 - For Git repositories (defined by the presence of a `.git` sub-directory), the context directory is the repository root (for absolute paths), or the directory containing a `dagger.json` file (for relative paths).
 - For all other cases, the context directory is the directory containing a `dagger.json` file.
 
+<Card title="Context directory resolution">
 ```mermaid
 flowchart TD
     B[Git repository?] -->|Yes| C[Absolute path?]
@@ -82,6 +125,7 @@ flowchart TD
     C -->|No| E[Context directory = Directory containing dagger.json]
     B -->|No| F[Context directory = Directory containing dagger.json]
 ```
+</Card>
 
 <Important>
   For security reasons, it is not possible to retrieve files or directories
@@ -90,7 +134,7 @@ flowchart TD
 
 The following sections contain examples of how a `Directory` argument is resolved for different default path values. The same rules are followed for `File` arguments.
 
-### For Git repositories
+### Git repositories
 
 | Default path | Context directory                           | Resolved path |
 | ------------ | ------------------------------------------- | ------------- |
@@ -103,7 +147,7 @@ The following sections contain examples of how a `Directory` argument is resolve
 - If the default path is the relative path `.`, the context directory is the directory containing `dagger.json` (say, `/my-module`). The resolved path will then be `/my-module`.
 - If the default path is the relative path `..`, the context directory is still the directory containing `dagger.json`. The resolved path will then be the parent of the context directory (`/`).
 
-### For all other cases
+### Non-Git repositories
 
 | Default path | Context directory                           | Resolved path                    |
 | ------------ | ------------------------------------------- | -------------------------------- |
@@ -137,7 +181,7 @@ There are two important reasons for this.
 
 To tell a Dagger Function which directory to use, specify its path as an argument when using `dagger call`. Here's a simple example, which passes a directory from the host (`./example/hello`) to a Dagger Function:
 
-```shell
+```shell Shell icon="terminal" wrap
 git clone https://github.com/golang/example
 dagger -m github.com/kpenfound/dagger-modules/golang@v0.2.0 call build --source=./example/hello --args=. directory --p
 ```
