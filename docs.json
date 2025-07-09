@@ -10,7 +10,7 @@
   "favicon": "/favicon.png",
   "banner": {
     "dismissible": true,
-    "content": "Join Our Engineering Deep Dive on Agentic CI [Register Now](https://dagger.io/deep-dives/agentic-ci)"
+    "content": "Engineering deep dive on Agentic CI — [Register Now](https://dagger.io/deep-dives/agentic-ci)"
   },
   "navigation": {
     "tabs": [
