@@ -19,6 +19,7 @@
         "groups": [
           {
             "group": "Getting Started",
+            "icon": "rocket",
             "pages": [
               "index",
               "docs/quickstart"
@@ -26,10 +27,12 @@
           },
           {
             "group": "Use Cases",
+            "icon": "briefcase",
             "pages": ["docs/use-cases/modern-ci", "docs/use-cases/agentic-ci"]
           },
           {
             "group": "Components",
+            "icon": "cog",
             "pages": [
               "docs/dagger-functions",
               "docs/typed-objects",
@@ -38,6 +41,7 @@
           },
           {
             "group": "Build Workflow",
+            "icon": "workflow",
             "pages": [
               "docs/create-chain-functions",
               "docs/ai-llm",
@@ -47,6 +51,7 @@
           },
           {
             "group": "Run Workflow",
+            "icon": "play",
             "pages": [
               "docs/run-dagger-shell",
               "docs/run-from-code",
@@ -68,6 +73,7 @@
           },
           {
             "group": "Manage Workflow",
+            "icon": "settings",
             "pages": [
               "docs/secrets-config",
               "docs/caching-performance",
@@ -83,6 +89,7 @@
           },
           {
             "group": "Admin",
+            "icon": "shield",
             "pages": ["docs/security"]
           }
         ]
@@ -173,7 +180,7 @@
   },
   "styling": {
     "eyebrows": "section",
-    "codeblocks": "dark"
+    "codeblocks": "system"
   },
   "icons": {
     "library": "lucide"
