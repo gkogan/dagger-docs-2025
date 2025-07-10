@@ -1,5 +1,3 @@
-import React, { useState, useEffect } from 'react';
-
 export const CodeTabs = ({ systemShellCommand, daggerShellCommand, daggerCliCommand }) => {
   // Determine which tabs should be visible based on provided commands
   const availableTabs = [];
