@@ -22,7 +22,8 @@
             "icon": "rocket",
             "pages": [
               "index",
-              "quickstart"
+              "quickstart",
+              "install"
             ]
           },
           {
@@ -180,7 +181,7 @@
   },
   "styling": {
     "eyebrows": "section",
-    "codeblocks": "system"
+    "codeblocks": "dark"
   },
   "icons": {
     "library": "lucide"

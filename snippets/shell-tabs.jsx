@@ -1,9 +1,10 @@
-export const ShellTabs = ({ systemShellCommand, daggerShellCommand, daggerCliCommand }) => {
+export const ShellTabs = ({ systemShellCommand, daggerShellCommand, daggerCliCommand, scriptCommand }) => {
   // Determine which tabs should be visible based on provided commands
   const availableTabs = [];
   if (systemShellCommand) availableTabs.push('system');
   if (daggerShellCommand) availableTabs.push('dagger');
   if (daggerCliCommand) availableTabs.push('cli');
+  if (scriptCommand) availableTabs.push('script');
 
   // Set initial preferred shell to the first available tab
   const [preferredShell, setPreferredShell] = useState(availableTabs.length > 0 ? availableTabs[0] : null);
@@ -54,7 +55,8 @@ export const ShellTabs = ({ systemShellCommand, daggerShellCommand, daggerCliCom
     const onlyTab = availableTabs[0];
     const command = onlyTab === 'system' ? systemShellCommand : 
                    onlyTab === 'dagger' ? daggerShellCommand : 
-                   daggerCliCommand;
+                   onlyTab === 'cli' ? daggerCliCommand :
+                   scriptCommand;
     
     return (
       <div>
@@ -69,6 +71,7 @@ export const ShellTabs = ({ systemShellCommand, daggerShellCommand, daggerCliCom
       case 'system': return systemShellCommand;
       case 'dagger': return daggerShellCommand;
       case 'cli': return daggerCliCommand;
+      case 'script': return scriptCommand;
       default: return null;
     }
   };
@@ -103,6 +106,15 @@ export const ShellTabs = ({ systemShellCommand, daggerShellCommand, daggerCliCom
             {renderCommand(daggerCliCommand)}
           </Tab>
         )}
+        {scriptCommand && (
+          <Tab 
+            title="Script" 
+            active={preferredShell === 'script'}
+            onClick={() => handleShellChange('script')}
+          >
+            {renderCommand(scriptCommand)}
+          </Tab>
+        )}
       </Tabs>
     </div>
   );
@@ -114,7 +126,8 @@ export default function ({ children }) {
   const commands = {
     systemShellCommand: null,
     daggerShellCommand: null,
-    daggerCliCommand: null
+    daggerCliCommand: null,
+    scriptCommand: null
   };
 
   // Process children to extract actual command values if available
@@ -130,6 +143,8 @@ export default function ({ children }) {
           commands.daggerShellCommand = content;
         } else if (title.includes('dagger cli')) {
           commands.daggerCliCommand = content;
+        } else if (title.includes('script')) {
+          commands.scriptCommand = content;
         }
       }
     });
