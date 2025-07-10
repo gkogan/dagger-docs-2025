@@ -39,7 +39,7 @@ export const ShellTabs = ({ systemShellCommand, daggerShellCommand, daggerCliCom
     // Use the CodeBlock component from your documentation framework
     // This component should know how to properly render code with syntax highlighting
     return (
-      <CodeBlock language="shell" className="shell-command">
+      <CodeBlock language="shell" className="shell-command" icon="terminal" wrap="true" filename={preferredShell}>
         {actualCommand}
       </CodeBlock>
     );

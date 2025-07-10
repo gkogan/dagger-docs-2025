@@ -181,7 +181,7 @@
   },
   "styling": {
     "eyebrows": "section",
-    "codeblocks": "dark"
+    "codeblocks": "system"
   },
   "icons": {
     "library": "lucide"
