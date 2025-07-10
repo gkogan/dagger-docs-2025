@@ -36,7 +36,22 @@ export const ShellTabs = ({
     setPreferredShell(shell);
   };
 
-  const renderCommand = (command) => {
+  const getFriendlyName = (shell) => {
+    switch (shell) {
+      case "system":
+        return "System Shell";
+      case "dagger":
+        return "Dagger Shell";
+      case "cli":
+        return "Dagger CLI";
+      case "script":
+        return "Script";
+      default:
+        return shell ? shell.charAt(0).toUpperCase() + shell.slice(1) : "Shell";
+    }
+  };
+
+  const renderCommand = (command, shell) => {
     // If no command is provided, don't render anything
     if (!command) return null;
 
@@ -52,7 +67,7 @@ export const ShellTabs = ({
         className="shell-command"
         icon="terminal"
         wrap="true"
-        filename={preferredShell}
+        filename={getFriendlyName(shell)}
       >
         {actualCommand}
       </CodeBlock>
@@ -76,7 +91,7 @@ export const ShellTabs = ({
         ? daggerCliCommand
         : scriptCommand;
 
-    return <div>{renderCommand(command)}</div>;
+    return <div>{renderCommand(command, onlyTab)}</div>;
   }
 
   return (
@@ -88,7 +103,7 @@ export const ShellTabs = ({
             active={preferredShell === "system"}
             onClick={() => handleShellChange("system")}
           >
-            {renderCommand(systemShellCommand)}
+            {renderCommand(systemShellCommand, "system")}
           </Tab>
         )}
         {daggerShellCommand && (
@@ -97,7 +112,7 @@ export const ShellTabs = ({
             active={preferredShell === "dagger"}
             onClick={() => handleShellChange("dagger")}
           >
-            {renderCommand(daggerShellCommand)}
+            {renderCommand(daggerShellCommand, "dagger")}
           </Tab>
         )}
         {daggerCliCommand && (
@@ -106,7 +121,7 @@ export const ShellTabs = ({
             active={preferredShell === "cli"}
             onClick={() => handleShellChange("cli")}
           >
-            {renderCommand(daggerCliCommand)}
+            {renderCommand(daggerCliCommand, "cli")}
           </Tab>
         )}
         {scriptCommand && (
@@ -115,7 +130,7 @@ export const ShellTabs = ({
             active={preferredShell === "script"}
             onClick={() => handleShellChange("script")}
           >
-            {renderCommand(scriptCommand)}
+            {renderCommand(scriptCommand, "script")}
           </Tab>
         )}
       </Tabs>
