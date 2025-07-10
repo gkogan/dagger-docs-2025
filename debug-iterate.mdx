@@ -1,0 +1,94 @@
+---
+title: "Debug & Iterate Fast"
+description: "Efficiently debug workflows and iterate quickly with Dagger's development tools and techniques"
+---
+
+import { ShellTabs } from '/snippets/shell-tabs.jsx';
+
+Workflow failures can be both frustrating and lead to wasted resources as the team seeks to understand what went wrong and why. Dagger's interactive debugging feature is an invaluable tool in this situation.
+
+## Interactive debugging
+
+Dagger lets users drop in to an interactive shell when a workflow run fails, with all the context at the point of failure. This is similar to a debugger experience, but without needing to set breakpoints explicitly. No changes are required to your code.
+
+Here's an example of a workflow run failing, and Dagger opening an interactive terminal at the point of failure:
+
+<CodeGroup>
+```go Go icon="golang" highlight={11}
+package main
+
+import "context"
+
+type MyModule struct{}
+
+func (m *MyModule) Foo(ctx context.Context) (string, error) {
+	return dag.Container().
+		From("alpine:latest").
+		WithExec([]string{"sh", "-c", "echo hello world > /foo"}).
+		WithExec([]string{"cat", "/FOO"}). // deliberate error
+		Stdout(ctx)
+}
+```
+
+```python Python icon="python" 
+file=./snippets/debugging-1/python/main.py
+```
+
+```typescript TypeScript icon="typescript" 
+file=./snippets/debugging-1/typescript/index.ts
+```
+
+```php PHP icon="php" 
+file=./snippets/debugging-1/php/src/MyModule.php
+```
+
+```java Java icon="java" 
+file=./snippets/debugging-1/java/src/main/java/io/dagger/modules/mymodule/MyModule.java
+```
+</CodeGroup>
+
+<ShellTabs
+  systemShellCommand="dagger --interactive -c 'foo'"
+  daggerCliCommand="dagger call --interactive foo"
+/>
+
+## Setting breakpoints
+
+You can also manually set one or more explicit breakpoints in your workflow, which then starts an interactive terminal session at each breakpoint. This lets you inspect a directory or a container at any point in your workflow run, with all the necessary context available to you.
+
+You can manually set breakpoints in your Dagger Function by using the `terminal()` method. This will pause the workflow execution and open an interactive terminal at that point.
+
+<CodeGroup>
+```go Go icon="golang" highlight={11}
+package main
+
+import "context"
+
+type MyModule struct{}
+
+func (m *MyModule) Foo(ctx context.Context) (string, error) {
+	return dag.Container().
+		From("alpine:latest").
+		WithExec([]string{"sh", "-c", "echo hello world > /foo"}).
+        Terminal().
+		WithExec([]string{"cat", "/FOO"}). // deliberate error
+		Stdout(ctx)
+}
+```
+
+```python Python icon="python" 
+file=./snippets/debugging-1/python/main.py
+```
+
+```typescript TypeScript icon="typescript" 
+file=./snippets/debugging-1/typescript/index.ts
+```
+
+```php PHP icon="php" 
+file=./snippets/debugging-1/php/src/MyModule.php
+```
+
+```java Java icon="java" 
+file=./snippets/debugging-1/java/src/main/java/io/dagger/modules/mymodule/MyModule.java
+```
+</CodeGroup>

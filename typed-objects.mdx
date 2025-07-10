@@ -18,7 +18,31 @@ Typed Objects are the core building blocks you work with in Dagger. They represe
 
 Represents a containerized environment for running commands and processes. This is the primary object for executing operations.
 
-```python
+<Tabs>
+
+<Tab title="Go" value="go">
+```go Go icon="golang"
+// Create a container and run commands
+result, err := dagger.Container().
+    From("python:3.11").
+    WithExec([]string{"pip", "install", "requests"}).
+    WithExec([]string{"python", "-c", "print('Hello from container')"}).
+    Stdout(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+**Common operations:**
+- `.From()` - Set base image
+- `.WithExec()` - Execute commands
+- `.WithFile()` - Add files to container
+- `.WithDirectory()` - Mount directories
+- `.WithEnvVariable()` - Set environment variables
+</Tab>
+
+<Tab title="Python" value="python">
+```python Python icon="python"
 # Create a container and run commands
 result = (
     dagger.container()
@@ -35,6 +59,27 @@ result = (
 - `.with_file()` - Add files to container
 - `.with_directory()` - Mount directories
 - `.with_env_variable()` - Set environment variables
+</Tab>
+
+<Tab title="TypeScript" value="typescript">
+```typescript TypeScript icon="js"
+// Create a container and run commands
+const result = await dagger.container()
+    .from("python:3.11")
+    .withExec(["pip", "install", "requests"])
+    .withExec(["python", "-c", "print('Hello from container')"])
+    .stdout();
+console.log(result);
+```
+**Common operations:**
+- `.from()` - Set base image
+- `.withExec()` - Execute commands
+- `.withFile()` - Add files to container
+- `.withDirectory()` - Mount directories
+- `.withEnvVariable()` - Set environment variables
+</Tab>
+
+</Tabs>
 
 ### Directory
 

@@ -19,71 +19,79 @@
         "groups": [
           {
             "group": "Getting Started",
+            "icon": "rocket",
             "pages": [
               "index",
-              "docs/quickstart"
+              "quickstart",
+              "install"
             ]
           },
           {
             "group": "Use Cases",
-            "pages": ["docs/use-cases/modern-ci", "docs/use-cases/agentic-ci"]
+            "icon": "briefcase",
+            "pages": ["use-cases/modern-ci", "use-cases/agentic-ci"]
           },
           {
             "group": "Components",
+            "icon": "cog",
             "pages": [
-              "docs/dagger-functions",
-              "docs/typed-objects",
-              "docs/reusable-modules"
+              "dagger-functions",
+              "typed-objects",
+              "reusable-modules"
             ]
           },
           {
             "group": "Build Workflow",
+            "icon": "workflow",
             "pages": [
-              "docs/create-chain-functions",
-              "docs/ai-llm",
-              "docs/use-modules",
-              "docs/test-locally"
+              "create-chain-functions",
+              "ai-llm",
+              "use-modules",
+              "test-locally"
             ]
           },
           {
             "group": "Run Workflow",
+            "icon": "play",
             "pages": [
-              "docs/run-dagger-shell",
-              "docs/run-from-code",
+              "run-dagger-shell",
+              "run-from-code",
               {
                 "group": "Run in CI",
                 "pages": [
-                  "docs/ci/github-actions",
-                  "docs/ci/gitlab-ci",
-                  "docs/ci/azure-pipelines",
-                  "docs/ci/circleci",
-                  "docs/ci/jenkins",
-                  "docs/ci/aws-codebuild",
-                  "docs/ci/argo-workflows",
-                  "docs/ci/tekton"
+                  "ci/github-actions",
+                  "ci/gitlab-ci",
+                  "ci/azure-pipelines",
+                  "ci/circleci",
+                  "ci/jenkins",
+                  "ci/aws-codebuild",
+                  "ci/argo-workflows",
+                  "ci/tekton"
                 ]
               },
-              "docs/debug-iterate"
+              "debug-iterate"
             ]
           },
           {
             "group": "Manage Workflow",
+            "icon": "settings",
             "pages": [
-              "docs/secrets-config",
-              "docs/caching-performance",
-              "docs/observe-dagger-cloud",
-              "docs/share-version-modules",
+              "secrets-config",
+              "caching-performance",
+              "observe-dagger-cloud",
+              "share-version-modules",
               {
                 "group": "Troubleshoot",
                 "pages": [
-                  "docs/ide-troubleshooting"
+                  "ide-troubleshooting"
                 ]
               }
             ]
           },
           {
             "group": "Admin",
-            "pages": ["docs/security"]
+            "icon": "shield",
+            "pages": ["security"]
           }
         ]
       },
@@ -173,7 +181,7 @@
   },
   "styling": {
     "eyebrows": "section",
-    "codeblocks": "dark"
+    "codeblocks": "system"
   },
   "icons": {
     "library": "lucide"
