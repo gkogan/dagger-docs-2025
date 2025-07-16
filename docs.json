@@ -177,5 +177,10 @@
   },
   "icons": {
     "library": "lucide"
+  },
+  "seo": {
+    "metatags": {
+      "robots": "noindex"
+    }
   }
 }
